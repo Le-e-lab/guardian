@@ -24,7 +24,7 @@ interface ModelResponse {
   tokensUsed: number;
 }
 
-// Free AI models available via Groq and OpenRouter
+// Free AI models available via Groq
 const FREE_MODELS: AIModel[] = [
   {
     name: 'Llama 3.1 8B',
@@ -45,18 +45,18 @@ const FREE_MODELS: AIModel[] = [
     costPer1k: 0,
   },
   {
-    name: 'Mixtral 8x7B',
+    name: 'Gemma 2 9B',
     provider: 'groq',
-    modelId: 'mixtral-8x7b-32768',
+    modelId: 'gemma2-9b-it',
     baseUrl: 'https://api.groq.com/openai/v1',
     apiKey: process.env.GROQ_API_KEY || '',
     maxTokens: 2000,
     costPer1k: 0,
   },
   {
-    name: 'Gemma 2 9B',
+    name: 'Llama 3.1 70B',
     provider: 'groq',
-    modelId: 'gemma2-9b-it',
+    modelId: 'llama-3.1-70b-versatile',
     baseUrl: 'https://api.groq.com/openai/v1',
     apiKey: process.env.GROQ_API_KEY || '',
     maxTokens: 2000,
