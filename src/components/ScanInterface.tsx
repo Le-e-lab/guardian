@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Shield, Zap, Lock, AlertTriangle, CheckCircle, XCircle, ChevronDown, ChevronUp, Clock, Download, Eye, Beaker, Target } from 'lucide-react';
 import { DEMO_TARGETS } from '@/lib/demo-targets';
+import AuthButton from './AuthButton';
 
 interface Finding {
   title: string;
@@ -214,10 +215,7 @@ export default function ScanInterface() {
                 </span>
               )}
             </button>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Lock className="w-4 h-4" />
-              <span>Passive Recon</span>
-            </div>
+            <AuthButton />
           </div>
         </div>
       </header>
