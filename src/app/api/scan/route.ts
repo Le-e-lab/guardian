@@ -11,6 +11,7 @@ import {
 } from '@/lib/guardrails';
 import { cleanupExpiredData } from '@/lib/data-retention';
 import { runEmployeeScan } from '@/lib/employee-scanner';
+import { calculateThreatLevel, generateContainmentStrategy, generateIncidentReport } from '@/lib/adaptive-defense';
 
 // Rate limiting: simple in-memory store
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -137,10 +138,13 @@ export async function POST(request: NextRequest) {
     if (isModuleAllowed(userRole, 'subdomains')) modules.push('subdomains');
     if (isModuleAllowed(userRole, 'credentials')) modules.push('credentials');
     if (isModuleAllowed(userRole, 'social')) modules.push('social');
+    
+    // Always include threat intel and African threat data
+    modules.push('threat_intel', 'african_threat', 'forum_osint');
 
     // Employee scan mode
     if (scanType === 'employee') {
-      modules = ['dns', 'tech', 'headers', 'credentials', 'social'];
+      modules = ['dns', 'tech', 'headers', 'credentials', 'social', 'threat_intel', 'african_threat', 'forum_osint'];
     }
 
     // Configure scan
@@ -238,6 +242,13 @@ export async function POST(request: NextRequest) {
     // Run data retention cleanup (async, don't block response)
     cleanupExpiredData().catch(err => console.error('[RETENTION] Cleanup error:', err));
 
+    // Generate adaptive defense analysis
+    const threatLevel = calculateThreatLevel(allFindings);
+    const containmentStrategy = allFindings.length > 0 
+      ? generateContainmentStrategy(allFindings[0], cleanTarget)
+      : null;
+    const incidentReport = generateIncidentReport(allFindings, threatLevel, cleanTarget);
+
     // Generate response
     const response = {
       id: scanTarget.id,
@@ -250,6 +261,14 @@ export async function POST(request: NextRequest) {
         allowedModules: guardrailConfig.allowedModules,
         dataRetentionDays: guardrailConfig.dataRetentionDays,
         requiresAuthorization: guardrailConfig.requiresAuthorization,
+      },
+      adaptiveDefense: {
+        threatLevel: threatLevel.level,
+        threatScore: threatLevel.score,
+        responseTime: threatLevel.responseTime,
+        immediateActions: threatLevel.actions,
+        containmentStrategy,
+        incidentReport,
       },
       scan_time_ms: scanResults.reduce((acc, r) => acc + r.duration_ms, 0),
       tools_run: scanResults.map(r => r.tool),
@@ -272,6 +291,7 @@ export async function POST(request: NextRequest) {
         'This assessment is for authorized security testing only.',
         'Unauthorized scanning of systems you do not own or have permission to test is illegal.',
         'Findings should be used for defensive purposes only.',
+        'African threat intelligence is based on regional attack patterns and may not reflect all threats.',
       ],
     };
 

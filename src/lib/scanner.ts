@@ -5,6 +5,7 @@
 
 import { runCredentialCheck } from './credentials';
 import { runSocialOSINT } from './social-osint';
+import { checkThreatIntel, getAfricanThreatIntel, monitorSecurityForums } from './threat-intel';
 
 export interface ScanConfig {
   target: string;
@@ -75,6 +76,45 @@ export async function runScan(config: ScanConfig): Promise<ReconResult[]> {
     scanPromises.push(
       runSocialOSINT(config.target).then(findings => ({
         tool: 'social-osint',
+        status: 'success' as const,
+        output: { domain: config.target, findingsCount: findings.length },
+        findings,
+        duration_ms: 0,
+      }))
+    );
+  }
+
+  // Threat intelligence feed
+  if (config.modules.includes('threat_intel')) {
+    scanPromises.push(
+      checkThreatIntel(config.target).then(findings => ({
+        tool: 'threat-intel',
+        status: 'success' as const,
+        output: { domain: config.target, findingsCount: findings.length },
+        findings,
+        duration_ms: 0,
+      }))
+    );
+  }
+
+  // African-specific threat intel
+  if (config.modules.includes('african_threat')) {
+    scanPromises.push(
+      getAfricanThreatIntel().then(findings => ({
+        tool: 'african-threat-intel',
+        status: 'success' as const,
+        output: { findingsCount: findings.length },
+        findings,
+        duration_ms: 0,
+      }))
+    );
+  }
+
+  // Security forum monitoring
+  if (config.modules.includes('forum_osint')) {
+    scanPromises.push(
+      monitorSecurityForums(config.target).then(findings => ({
+        tool: 'forum-osint',
         status: 'success' as const,
         output: { domain: config.target, findingsCount: findings.length },
         findings,
