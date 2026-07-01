@@ -1,8 +1,9 @@
 /**
  * SENTARI AI Reasoning Engine
- * Uses Groq API with Llama 3.1 8B for threat analysis
+ * Uses multi-model fusion for best analysis
  */
 
+import { runFusionAnalysis } from './ai-fusion';
 import { Finding } from './scanner';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -50,7 +51,7 @@ Provide your analysis as JSON with this structure:
 }`;
 
 /**
- * Analyze scan results using AI
+ * Analyze scan results using AI fusion
  */
 export async function analyzeWithAI(
   target: string,
@@ -61,89 +62,26 @@ export async function analyzeWithAI(
   overall_score: number;
   analysis: string;
   tokens_used: number;
+  fusion?: {
+    bestModel: string;
+    agreementLevel: number;
+    modelResponses: number;
+  };
 }> {
-  const groqApiKey = process.env.GROQ_API_KEY;
+  // Use fusion analysis across multiple models
+  const fusionResult = await runFusionAnalysis(findings, scanData);
 
-  if (!groqApiKey) {
-    // Fallback: rule-based analysis without AI
-    return ruleBasedAnalysis(target, findings);
-  }
-
-  const findingsSummary = findings.map(f => 
-    `- [${f.severity.toUpperCase()}] ${f.title}: ${f.remediation}`
-  ).join('\n');
-
-  const userPrompt = `Analyze the security scan results for ${target}:
-
-SCAN DATA:
-${JSON.stringify(scanData, null, 2)}
-
-FINDINGS (${findings.length} total):
-${findingsSummary || 'No findings detected'}
-
-Provide your analysis as JSON. Focus on:
-1. Real exploitability (not just theory)
-2. African infrastructure context
-3. Prioritized remediation steps
-4. Attack path chains`;
-
-  try {
-    const response = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${groqApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 2000,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Groq API error:', response.status);
-      return ruleBasedAnalysis(target, findings);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
-    const tokensUsed = data.usage?.total_tokens || 0;
-
-    // Parse AI response
-    let analysis;
-    try {
-      // Try to extract JSON from response
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        analysis = JSON.parse(jsonMatch[0]);
-      } else {
-        analysis = {
-          risk_summary: content,
-          overall_score: calculateScore(findings),
-        };
-      }
-    } catch {
-      analysis = {
-        risk_summary: content,
-        overall_score: calculateScore(findings),
-      };
-    }
-
-    return {
-      risk_summary: analysis.risk_summary || 'Analysis complete',
-      overall_score: analysis.overall_score || calculateScore(findings),
-      analysis: content,
-      tokens_used: tokensUsed,
-    };
-  } catch (error) {
-    console.error('AI analysis failed:', error);
-    return ruleBasedAnalysis(target, findings);
-  }
+  return {
+    risk_summary: fusionResult.allResponses[0]?.analysis?.substring(0, 500) || 'Analysis complete',
+    overall_score: fusionResult.bestRiskScore,
+    analysis: fusionResult.bestAnalysis,
+    tokens_used: fusionResult.allResponses.reduce((sum, r) => sum + r.tokensUsed, 0),
+    fusion: {
+      bestModel: fusionResult.bestModel,
+      agreementLevel: fusionResult.consensus.agreementLevel,
+      modelResponses: fusionResult.allResponses.length,
+    },
+  };
 }
 
 /**
@@ -158,52 +96,23 @@ function ruleBasedAnalysis(target: string, findings: Finding[]): {
   const score = calculateScore(findings);
   const critical = findings.filter(f => f.severity === 'critical');
   const high = findings.filter(f => f.severity === 'high');
-  const medium = findings.filter(f => f.severity === 'medium');
 
   let summary = `Security assessment of ${target} completed. `;
-  
-  if (critical.length > 0) {
-    summary += `${critical.length} critical vulnerabilities found that require immediate attention. `;
-  }
-  if (high.length > 0) {
-    summary += `${high.length} high-severity issues should be addressed soon. `;
-  }
-  if (medium.length > 0) {
-    summary += `${medium.length} medium-severity findings noted. `;
-  }
-  if (findings.length === 0) {
-    summary += 'No significant vulnerabilities detected in passive reconnaissance. ';
-  }
-
+  if (critical.length > 0) summary += `${critical.length} critical vulnerabilities found. `;
+  if (high.length > 0) summary += `${high.length} high-severity issues. `;
   summary += `Overall risk score: ${score}/100.`;
 
   return {
     risk_summary: summary,
     overall_score: score,
-    analysis: JSON.stringify({
-      risk_summary: summary,
-      overall_score: score,
-      critical_findings: critical.map(f => f.title),
-      findings_count: {
-        critical: critical.length,
-        high: high.length,
-        medium: medium.length,
-        low: findings.filter(f => f.severity === 'low').length,
-        info: findings.filter(f => f.severity === 'info').length,
-      },
-    }),
+    analysis: JSON.stringify({ risk_summary: summary, overall_score: score }),
     tokens_used: 0,
   };
 }
 
-/**
- * Calculate risk score from findings
- */
 function calculateScore(findings: Finding[]): number {
-  if (findings.length === 0) return 85; // Good score if no findings
-
+  if (findings.length === 0) return 85;
   let score = 100;
-  
   for (const f of findings) {
     switch (f.severity) {
       case 'critical': score -= 25; break;
@@ -213,6 +122,5 @@ function calculateScore(findings: Finding[]): number {
       case 'info': score -= 1; break;
     }
   }
-
   return Math.max(0, Math.min(100, score));
 }
