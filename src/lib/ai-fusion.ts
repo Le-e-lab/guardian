@@ -1,22 +1,25 @@
 /**
- * SENTARI AI Model Fusion Engine
- * Uses multiple free AI models to find the best analysis
+ * SENTARI AI Model Fusion Engine v2
+ * Multi-provider: Groq (free), OpenRouter (cheap), HuggingFace (free), Ollama (local)
+ * Picks best model based on availability, cost, and quality
  */
 
 import { Finding } from './scanner';
 
 interface AIModel {
   name: string;
-  provider: string;
+  provider: 'groq' | 'openrouter' | 'huggingface' | 'ollama';
   modelId: string;
   baseUrl: string;
   apiKey: string;
   maxTokens: number;
-  costPer1k: number; // 0 = free
+  costPer1k: number;
+  priority: number; // Lower = better
 }
 
 interface ModelResponse {
   model: string;
+  provider: string;
   analysis: string;
   riskScore: number;
   confidence: number;
@@ -24,8 +27,9 @@ interface ModelResponse {
   tokensUsed: number;
 }
 
-// Free AI models available via Groq
-const FREE_MODELS: AIModel[] = [
+// All available models across providers
+const ALL_MODELS: AIModel[] = [
+  // Groq (Free, fastest)
   {
     name: 'Llama 3.1 8B',
     provider: 'groq',
@@ -34,6 +38,7 @@ const FREE_MODELS: AIModel[] = [
     apiKey: process.env.GROQ_API_KEY || '',
     maxTokens: 2000,
     costPer1k: 0,
+    priority: 1,
   },
   {
     name: 'Llama 3.3 70B',
@@ -43,15 +48,7 @@ const FREE_MODELS: AIModel[] = [
     apiKey: process.env.GROQ_API_KEY || '',
     maxTokens: 2000,
     costPer1k: 0,
-  },
-  {
-    name: 'Gemma 2 9B',
-    provider: 'groq',
-    modelId: 'gemma2-9b-it',
-    baseUrl: 'https://api.groq.com/openai/v1',
-    apiKey: process.env.GROQ_API_KEY || '',
-    maxTokens: 2000,
-    costPer1k: 0,
+    priority: 2,
   },
   {
     name: 'Llama 3.1 70B',
@@ -61,32 +58,96 @@ const FREE_MODELS: AIModel[] = [
     apiKey: process.env.GROQ_API_KEY || '',
     maxTokens: 2000,
     costPer1k: 0,
+    priority: 3,
+  },
+  {
+    name: 'Gemma 2 9B',
+    provider: 'groq',
+    modelId: 'gemma2-9b-it',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    apiKey: process.env.GROQ_API_KEY || '',
+    maxTokens: 2000,
+    costPer1k: 0,
+    priority: 4,
+  },
+  // OpenRouter (Cheap, many models)
+  {
+    name: 'DeepSeek R1',
+    provider: 'openrouter',
+    modelId: 'deepseek/deepseek-r1',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    apiKey: process.env.OPENROUTER_API_KEY || '',
+    maxTokens: 2000,
+    costPer1k: 0.55, // $0.55/1M input
+    priority: 5,
+  },
+  {
+    name: 'Llama 3.1 8B (OR)',
+    provider: 'openrouter',
+    modelId: 'meta-llama/llama-3.1-8b-instruct:free',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    apiKey: process.env.OPENROUTER_API_KEY || '',
+    maxTokens: 2000,
+    costPer1k: 0,
+    priority: 6,
+  },
+  {
+    name: 'Mistral 7B',
+    provider: 'openrouter',
+    modelId: 'mistralai/mistral-7b-instruct:free',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    apiKey: process.env.OPENROUTER_API_KEY || '',
+    maxTokens: 2000,
+    costPer1k: 0,
+    priority: 7,
+  },
+  // HuggingFace (Free inference)
+  {
+    name: 'Llama 3.1 8B (HF)',
+    provider: 'huggingface',
+    modelId: 'meta-llama/Llama-3.1-8B-Instruct',
+    baseUrl: 'https://api-inference.huggingface.co/models',
+    apiKey: process.env.HUGGINGFACE_API_KEY || '',
+    maxTokens: 2000,
+    costPer1k: 0,
+    priority: 8,
+  },
+  // Ollama (Local, free, unlimited)
+  {
+    name: 'Llama 3.1 8B (Local)',
+    provider: 'ollama',
+    modelId: 'llama3.1:8b',
+    baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+    apiKey: '',
+    maxTokens: 2000,
+    costPer1k: 0,
+    priority: 0, // Highest priority - local is best
   },
 ];
 
 const SYSTEM_PROMPT = `You are SENTARI, an expert Africa-centric AI threat validation agent.
 
-Analyze the following security scan results and provide:
-1. A risk score (0-100)
-2. A brief executive summary
-3. The top 3 critical findings
-4. Recommended defensive actions
-5. African-specific context (if applicable)
+Analyze security scan results and provide:
+1. Risk score (0-100)
+2. Executive summary
+3. Top 3 critical findings
+4. Defensive actions
+5. African-specific context
 
-IMPORTANT: Never generate exploit code or attack instructions. Frame all findings as defensive recommendations.
+IMPORTANT: Never generate exploit code. Frame all findings as defensive recommendations.
 
-Respond in JSON format:
+Respond in JSON:
 {
   "risk_score": <0-100>,
-  "summary": "One paragraph executive summary",
+  "summary": "Executive summary",
   "critical_findings": ["finding 1", "finding 2", "finding 3"],
   "defensive_actions": ["action 1", "action 2", "action 3"],
-  "african_context": "African-specific considerations",
+  "african_context": "African considerations",
   "confidence": <0-100>
 }`;
 
 /**
- * Call a single AI model
+ * Call a single AI model (handles all providers)
  */
 async function callModel(
   model: AIModel,
@@ -99,7 +160,7 @@ async function callModel(
     `- [${f.severity.toUpperCase()}] ${f.title}: ${f.remediation}`
   ).join('\n');
 
-  const userPrompt = `Analyze these security findings for a target:
+  const userPrompt = `Analyze these security findings:
 
 FINDINGS (${findings.length} total):
 ${findingsSummary || 'No findings detected'}
@@ -107,35 +168,83 @@ ${findingsSummary || 'No findings detected'}
 SCAN DATA:
 ${JSON.stringify(scanData, null, 2)}
 
-Provide your analysis as JSON.`;
+Provide analysis as JSON.`;
 
   try {
-    const response = await fetch(`${model.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${model.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: model.modelId,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.3,
-        max_tokens: model.maxTokens,
-      }),
-    });
+    let response;
 
-    if (!response.ok) {
-      throw new Error(`Model ${model.name} failed: ${response.status}`);
+    // Different API formats for each provider
+    if (model.provider === 'ollama') {
+      // Ollama uses its own API format
+      response = await fetch(`${model.baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: model.modelId,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: userPrompt },
+          ],
+          stream: false,
+          options: { temperature: 0.3, num_predict: model.maxTokens },
+        }),
+      });
+    } else if (model.provider === 'huggingface') {
+      // HuggingFace Inference API
+      response = await fetch(`${model.baseUrl}/${model.modelId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${model.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: `<|system|>\n${SYSTEM_PROMPT}\n<|user|>\n${userPrompt}\n<|assistant|>`,
+          parameters: { max_new_tokens: model.maxTokens, temperature: 0.3 },
+        }),
+      });
+    } else {
+      // OpenAI-compatible (Groq, OpenRouter)
+      response = await fetch(`${model.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${model.apiKey}`,
+          'Content-Type': 'application/json',
+          ...(model.provider === 'openrouter' ? { 'HTTP-Referer': 'https://sentari.dev' } : {}),
+        },
+        body: JSON.stringify({
+          model: model.modelId,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.3,
+          max_tokens: model.maxTokens,
+        }),
+      });
+    }
+
+    if (!response || !response.ok) {
+      throw new Error(`${model.name} failed: ${response?.status || 'no response'}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
-    const tokensUsed = data.usage?.total_tokens || 0;
 
-    // Parse JSON response
+    // Parse response based on provider
+    let content = '';
+    let tokensUsed = 0;
+
+    if (model.provider === 'ollama') {
+      content = data.message?.content || '';
+      tokensUsed = data.eval_count || 0;
+    } else if (model.provider === 'huggingface') {
+      content = Array.isArray(data) ? data[0]?.generated_text || '' : data.generated_text || '';
+      tokensUsed = 0;
+    } else {
+      content = data.choices?.[0]?.message?.content || '';
+      tokensUsed = data.usage?.total_tokens || 0;
+    }
+
+    // Parse JSON from response
     let parsed;
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -146,6 +255,7 @@ Provide your analysis as JSON.`;
 
     return {
       model: model.name,
+      provider: model.provider,
       analysis: content,
       riskScore: parsed.risk_score || 50,
       confidence: parsed.confidence || 50,
@@ -153,10 +263,11 @@ Provide your analysis as JSON.`;
       tokensUsed,
     };
   } catch (error) {
-    console.error(`Model ${model.name} error:`, error);
+    console.error(`[FUSION] ${model.name} (${model.provider}) error:`, String(error).substring(0, 100));
     return {
       model: model.name,
-      analysis: `Error: ${String(error)}`,
+      provider: model.provider,
+      analysis: `Error: ${String(error).substring(0, 200)}`,
       riskScore: 0,
       confidence: 0,
       latency: Date.now() - startTime,
@@ -166,13 +277,14 @@ Provide your analysis as JSON.`;
 }
 
 /**
- * Run fusion analysis across multiple models
+ * Run fusion analysis across multiple providers
  */
 export async function runFusionAnalysis(
   findings: Finding[],
   scanData: Record<string, unknown>
 ): Promise<{
   bestModel: string;
+  bestProvider: string;
   bestAnalysis: string;
   bestRiskScore: number;
   allResponses: ModelResponse[];
@@ -182,23 +294,29 @@ export async function runFusionAnalysis(
     recommendedActions: string[];
   };
 }> {
-  console.log(`[FUSION] Running ${FREE_MODELS.length} models in parallel...`);
+  // Filter to only models with API keys configured
+  const availableModels = ALL_MODELS.filter(m => {
+    if (m.provider === 'ollama') return true; // Always try local
+    return m.apiKey && m.apiKey.length > 10;
+  });
+
+  console.log(`[FUSION] Running ${availableModels.length} models across ${new Set(availableModels.map(m => m.provider)).size} providers...`);
 
   // Run all models in parallel
   const responses = await Promise.allSettled(
-    FREE_MODELS.map(model => callModel(model, findings, scanData))
+    availableModels.map(model => callModel(model, findings, scanData))
   );
 
   // Extract successful responses
   const allResponses = responses
     .filter((r): r is PromiseFulfilledResult<ModelResponse> => r.status === 'fulfilled')
     .map(r => r.value)
-    .filter(r => r.riskScore > 0); // Filter out failed models
+    .filter(r => r.riskScore > 0);
 
   if (allResponses.length === 0) {
-    // Fallback to rule-based analysis
     return {
       bestModel: 'rule-based',
+      bestProvider: 'local',
       bestAnalysis: 'All AI models failed. Using rule-based analysis.',
       bestRiskScore: calculateRuleBasedScore(findings),
       allResponses: [],
@@ -210,10 +328,16 @@ export async function runFusionAnalysis(
     };
   }
 
-  // Find best model (highest confidence + lowest latency)
+  // Find best model (priority + confidence + latency)
   const best = allResponses.reduce((prev, curr) => {
-    const prevScore = prev.confidence * 0.7 + (10000 / (prev.latency + 1)) * 0.3;
-    const currScore = curr.confidence * 0.7 + (10000 / (curr.latency + 1)) * 0.3;
+    const prevModel = ALL_MODELS.find(m => m.name === prev.model);
+    const currModel = ALL_MODELS.find(m => m.name === curr.model);
+    const prevPriority = prevModel?.priority ?? 10;
+    const currPriority = currModel?.priority ?? 10;
+
+    // Score: lower priority is better, higher confidence is better, lower latency is better
+    const prevScore = (10 - prevPriority) * 10 + prev.confidence * 0.7 + (10000 / (prev.latency + 1)) * 0.3;
+    const currScore = (10 - currPriority) * 10 + curr.confidence * 0.7 + (10000 / (curr.latency + 1)) * 0.3;
     return currScore > prevScore ? curr : prev;
   });
 
@@ -221,26 +345,24 @@ export async function runFusionAnalysis(
   const riskScores = allResponses.map(r => r.riskScore);
   const averageRiskScore = riskScores.reduce((a, b) => a + b, 0) / riskScores.length;
   const variance = riskScores.reduce((sum, score) => sum + Math.pow(score - averageRiskScore, 2), 0) / riskScores.length;
-  const agreementLevel = Math.max(0, 100 - Math.sqrt(variance)); // Lower variance = higher agreement
+  const agreementLevel = Math.max(0, 100 - Math.sqrt(variance));
 
-  // Collect all recommended actions
+  // Collect recommended actions
   const allActions = allResponses.flatMap(r => {
     try {
       const match = r.analysis.match(/"defensive_actions":\s*\[([\s\S]*?)\]/);
-      if (match) {
-        return JSON.parse(`[${match[1]}]`);
-      }
+      if (match) return JSON.parse(`[${match[1]}]`);
     } catch {}
     return [];
   });
 
-  // Deduplicate and take top 5
   const uniqueActions = [...new Set(allActions)].slice(0, 5);
 
-  console.log(`[FUSION] Best model: ${best.model}, Risk: ${averageRiskScore.toFixed(1)}, Agreement: ${agreementLevel.toFixed(1)}%`);
+  console.log(`[FUSION] Best: ${best.model} (${best.provider}), Risk: ${averageRiskScore.toFixed(1)}, Agreement: ${agreementLevel.toFixed(1)}%`);
 
   return {
     bestModel: best.model,
+    bestProvider: best.provider,
     bestAnalysis: best.analysis,
     bestRiskScore: Math.round(averageRiskScore),
     allResponses,
@@ -252,12 +374,8 @@ export async function runFusionAnalysis(
   };
 }
 
-/**
- * Rule-based fallback score calculation
- */
 function calculateRuleBasedScore(findings: Finding[]): number {
   if (findings.length === 0) return 85;
-
   let score = 100;
   for (const f of findings) {
     switch (f.severity) {

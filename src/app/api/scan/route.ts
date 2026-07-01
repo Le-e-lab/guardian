@@ -12,6 +12,7 @@ import {
 import { cleanupExpiredData } from '@/lib/data-retention';
 import { runEmployeeScan } from '@/lib/employee-scanner';
 import { calculateThreatLevel, generateContainmentStrategy, generateIncidentReport } from '@/lib/adaptive-defense';
+import { runActiveScan, ActiveScanConfig } from '@/lib/active-scan';
 
 // Rate limiting: simple in-memory store
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { target, mode = 'passive', scanType = 'standard', employeeEmails } = body;
+    const { target, mode = 'passive', scanType = 'standard', employeeEmails, authorizationToken } = body;
 
     // Determine user role and get guardrail config
     const userRole = getUserRole(request);
@@ -164,6 +165,39 @@ export async function POST(request: NextRequest) {
     if (scanType === 'employee') {
       const employeeFindings = await runEmployeeScan(cleanTarget, employeeEmails);
       allFindings = [...allFindings, ...employeeFindings];
+    }
+
+    // Active scanning (if authorized)
+    if (scanType === 'active' && authorizationToken) {
+      if (!isActiveScanningAllowed(userRole)) {
+        return NextResponse.json(
+          { error: 'Active scanning requires professional or enterprise role' },
+          { status: 403 }
+        );
+      }
+
+      const activeConfig: ActiveScanConfig = {
+        target: cleanTarget,
+        authorizationToken,
+        scope: ['sql_injection', 'xss', 'directory_traversal', 'open_redirect'],
+        timeout: 60,
+        maxConnections: 5,
+      };
+
+      const activeResults = await runActiveScan(activeConfig);
+      allFindings = [...allFindings, ...activeResults.findings];
+
+      // Store active scan results
+      if (activeResults.authorized) {
+        await supabaseAdmin.from('scan_results').insert({
+          target_id: scanTarget.id,
+          scan_phase: 'active',
+          tool_name: 'active-scanner',
+          raw_output: { authorized: true, findingsCount: activeResults.findings.length },
+          findings_count: activeResults.findings.length,
+          completed_at: new Date().toISOString(),
+        });
+      }
     }
 
     // Store scan results in database
