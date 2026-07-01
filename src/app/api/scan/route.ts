@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runScan, ScanConfig } from '@/lib/scanner';
 import { analyzeWithAI } from '@/lib/ai';
 import { supabaseAdmin } from '@/lib/supabase';
+import { 
+  GUARDRAIL_CONFIGS, 
+  isModuleAllowed, 
+  hasExceededScanLimit, 
+  validateAIOutput,
+  UserRole 
+} from '@/lib/guardrails';
+import { cleanupExpiredData } from '@/lib/data-retention';
+import { runEmployeeScan } from '@/lib/employee-scanner';
 
 // Rate limiting: simple in-memory store
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -34,22 +43,29 @@ function validateTarget(target: string): { valid: boolean; clean: string; error?
   const clean = target
     .replace(/^https?:\/\//, '')
     .replace(/\/.*$/, '')
-    .replace(/[:;].*$/, '') // Remove port and anything after
+    .replace(/[:;].*$/, '')
     .trim()
     .toLowerCase();
 
-  // Basic domain validation
   const domainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/;
   if (!domainRegex.test(clean)) {
     return { valid: false, clean: '', error: 'Invalid domain format' };
   }
 
-  // Block localhost and internal IPs
   if (clean === 'localhost' || clean.startsWith('127.') || clean.startsWith('192.168.') || clean.startsWith('10.')) {
     return { valid: false, clean: '', error: 'Internal targets are not allowed' };
   }
 
   return { valid: true, clean };
+}
+
+// Determine user role from request
+function getUserRole(request: NextRequest): UserRole {
+  const apiKey = request.headers.get('x-api-key');
+  if (apiKey) {
+    return 'professional';
+  }
+  return 'free';
 }
 
 export async function POST(request: NextRequest) {
@@ -64,7 +80,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { target, mode = 'passive' } = body;
+    const { target, mode = 'passive', scanType = 'standard', employeeEmails } = body;
+
+    // Determine user role and get guardrail config
+    const userRole = getUserRole(request);
+    const guardrailConfig = GUARDRAIL_CONFIGS[userRole];
 
     // Validate input
     const validation = validateTarget(target);
@@ -74,7 +94,23 @@ export async function POST(request: NextRequest) {
 
     const cleanTarget = validation.clean;
 
-    console.log(`[API] Starting scan for ${cleanTarget} from ${clientIp}`);
+    // Check scan limits
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: scansToday, error: countError } = await supabaseAdmin
+      .from('scan_targets')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', twentyFourHoursAgo);
+
+    console.log(`[API] Scans today: ${scansToday}, error: ${countError}`);
+
+    if (scansToday !== null && hasExceededScanLimit(userRole, scansToday)) {
+      return NextResponse.json(
+        { error: `Daily scan limit reached (${guardrailConfig.maxScansPerDay}). Upgrade your plan for more scans.` },
+        { status: 429 }
+      );
+    }
+
+    console.log(`[API] Starting ${scanType} scan for ${cleanTarget} (role: ${userRole})`);
 
     // Create scan target in database
     const { data: scanTarget, error: targetError } = await supabaseAdmin
@@ -93,18 +129,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create scan' }, { status: 500 });
     }
 
-    // Configure scan modules (including credential check and social OSINT)
+    // Build scan modules based on guardrails
+    let modules = ['dns', 'tech', 'headers'];
+    
+    if (isModuleAllowed(userRole, 'ports')) modules.push('ports');
+    if (isModuleAllowed(userRole, 'ssl')) modules.push('ssl');
+    if (isModuleAllowed(userRole, 'subdomains')) modules.push('subdomains');
+    if (isModuleAllowed(userRole, 'credentials')) modules.push('credentials');
+    if (isModuleAllowed(userRole, 'social')) modules.push('social');
+
+    // Employee scan mode
+    if (scanType === 'employee') {
+      modules = ['dns', 'tech', 'headers', 'credentials', 'social'];
+    }
+
+    // Configure scan
     const config: ScanConfig = {
       target: cleanTarget,
       mode: mode as 'passive' | 'active',
-      modules: ['dns', 'ports', 'tech', 'ssl', 'headers', 'subdomains', 'credentials', 'social'],
+      modules,
     };
 
     // Run the scan
     const scanResults = await runScan(config);
 
     // Collect all findings
-    const allFindings = scanResults.flatMap(r => r.findings);
+    let allFindings = scanResults.flatMap(r => r.findings);
+
+    // Employee scan additional checks
+    if (scanType === 'employee') {
+      const employeeFindings = await runEmployeeScan(cleanTarget, employeeEmails);
+      allFindings = [...allFindings, ...employeeFindings];
+    }
 
     // Store scan results in database
     for (const result of scanResults) {
@@ -140,6 +196,13 @@ export async function POST(request: NextRequest) {
       })),
     });
 
+    // Validate AI output for guardrails
+    const aiValidation = validateAIOutput(analysis.analysis);
+    if (!aiValidation.valid) {
+      console.warn('[GUARDRAILS] AI output contains violations:', aiValidation.violations);
+      analysis.analysis = analysis.analysis.replace(/\b(exploit|attack|hack|malware)\b/gi, '[REDACTED]');
+    }
+
     // Store AI analysis
     await supabaseAdmin.from('ai_analysis').insert({
       target_id: scanTarget.id,
@@ -161,16 +224,33 @@ export async function POST(request: NextRequest) {
       action: 'scan_completed',
       resource_type: 'scan_target',
       resource_id: scanTarget.id,
-      details: { target: cleanTarget, findings_count: allFindings.length, risk_score: analysis.overall_score },
+      details: { 
+        target: cleanTarget, 
+        findings_count: allFindings.length, 
+        risk_score: analysis.overall_score,
+        user_role: userRole,
+        scan_type: scanType,
+        modules_used: modules,
+      },
       ip_address: clientIp,
     });
+
+    // Run data retention cleanup (async, don't block response)
+    cleanupExpiredData().catch(err => console.error('[RETENTION] Cleanup error:', err));
 
     // Generate response
     const response = {
       id: scanTarget.id,
       target: cleanTarget,
       mode,
+      scanType,
       status: 'completed',
+      userRole,
+      guardrails: {
+        allowedModules: guardrailConfig.allowedModules,
+        dataRetentionDays: guardrailConfig.dataRetentionDays,
+        requiresAuthorization: guardrailConfig.requiresAuthorization,
+      },
       scan_time_ms: scanResults.reduce((acc, r) => acc + r.duration_ms, 0),
       tools_run: scanResults.map(r => r.tool),
       findings: {
@@ -188,6 +268,11 @@ export async function POST(request: NextRequest) {
       scan_details: scanResults,
       details: allFindings,
       created_at: scanTarget.created_at,
+      disclaimers: [
+        'This assessment is for authorized security testing only.',
+        'Unauthorized scanning of systems you do not own or have permission to test is illegal.',
+        'Findings should be used for defensive purposes only.',
+      ],
     };
 
     console.log(`[API] Scan completed: ${allFindings.length} findings, score: ${analysis.overall_score}`);
@@ -227,7 +312,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Transform data for frontend
     const transformed = scans?.map(scan => ({
       id: scan.id,
       target: scan.target_url,
