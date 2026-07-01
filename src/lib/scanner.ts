@@ -26,46 +26,65 @@ export interface Finding {
 }
 
 /**
- * Main scan orchestrator
+ * Main scan orchestrator - runs all modules in parallel for speed
  */
 export async function runScan(config: ScanConfig): Promise<ReconResult[]> {
-  const results: ReconResult[] = [];
   const startTime = Date.now();
-
   console.log(`[SENTARI] Starting scan: ${config.target} (${config.mode} mode)`);
 
-  // Phase 1: DNS & Subdomain Discovery
+  // Build list of scan promises
+  const scanPromises: Promise<ReconResult>[] = [];
+
   if (config.modules.includes('dns')) {
-    results.push(await scanDns(config.target));
+    scanPromises.push(scanDns(config.target));
   }
-
-  // Phase 2: Port Scanning
   if (config.modules.includes('ports')) {
-    results.push(await scanPorts(config.target));
+    scanPromises.push(scanPorts(config.target));
   }
-
-  // Phase 3: Technology Detection
   if (config.modules.includes('tech')) {
-    results.push(await scanTechnology(config.target));
+    scanPromises.push(scanTechnology(config.target));
   }
-
-  // Phase 4: SSL/TLS Analysis
   if (config.modules.includes('ssl')) {
-    results.push(await scanSsl(config.target));
+    scanPromises.push(scanSsl(config.target));
   }
-
-  // Phase 5: HTTP Security Headers
   if (config.modules.includes('headers')) {
-    results.push(await scanHeaders(config.target));
+    scanPromises.push(scanHeaders(config.target));
   }
-
-  // Phase 6: Subdomain Enumeration
   if (config.modules.includes('subdomains')) {
-    results.push(await scanSubdomains(config.target));
+    scanPromises.push(scanSubdomains(config.target));
   }
 
-  console.log(`[SENTARI] Scan completed in ${Date.now() - startTime}ms`);
-  return results;
+  // Run all scans in parallel with individual timeouts
+  const results = await Promise.allSettled(
+    scanPromises.map(p => 
+      Promise.race([
+        p.catch(err => ({
+          tool: 'unknown',
+          status: 'error' as const,
+          output: { error: String(err) },
+          findings: [],
+          duration_ms: 0,
+        })),
+        new Promise<ReconResult>((_, reject) => 
+          setTimeout(() => reject(new Error('Scan timeout')), 25000)
+        )
+      ]).catch(err => ({
+        tool: 'unknown',
+        status: 'error' as const,
+        output: { error: String(err) },
+        findings: [],
+        duration_ms: 0,
+      }))
+    )
+  );
+
+  // Extract successful results
+  const scanResults: ReconResult[] = results
+    .filter((r): r is PromiseFulfilledResult<ReconResult> => r.status === 'fulfilled')
+    .map(r => r.value);
+
+  console.log(`[SENTARI] Scan completed in ${Date.now() - startTime}ms (${scanResults.length} modules)`);
+  return scanResults;
 }
 
 /**
@@ -122,35 +141,25 @@ async function scanPorts(target: string): Promise<ReconResult> {
   const findings: Finding[] = [];
   const openPorts: Array<{ port: number; service: string; state: string }> = [];
 
-  // Common ports to check (top 20)
+  // Critical ports to check (top 10 only for speed)
   const portsToCheck = [
     { port: 21, service: 'FTP' },
     { port: 22, service: 'SSH' },
     { port: 23, service: 'Telnet' },
-    { port: 25, service: 'SMTP' },
-    { port: 53, service: 'DNS' },
     { port: 80, service: 'HTTP' },
-    { port: 110, service: 'POP3' },
-    { port: 143, service: 'IMAP' },
     { port: 443, service: 'HTTPS' },
-    { port: 445, service: 'SMB' },
-    { port: 993, service: 'IMAPS' },
-    { port: 995, service: 'POP3S' },
-    { port: 1433, service: 'MSSQL' },
-    { port: 1521, service: 'Oracle' },
     { port: 3306, service: 'MySQL' },
     { port: 3389, service: 'RDP' },
     { port: 5432, service: 'PostgreSQL' },
-    { port: 5900, service: 'VNC' },
     { port: 8080, service: 'HTTP-Proxy' },
     { port: 8443, service: 'HTTPS-Alt' },
   ];
 
-  // Check ports via TCP connection attempts (passive - just check if port responds)
+  // Check ports via TCP connection attempts (parallel, fast timeout)
   for (const { port, service } of portsToCheck) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2000);
+      const timeout = setTimeout(() => controller.abort(), 1500); // 1.5s timeout per port
 
       const response = await fetch(`https://${target}:${port}`, {
         signal: controller.signal,
@@ -392,13 +401,11 @@ async function scanSubdomains(target: string): Promise<ReconResult> {
   const start = Date.now();
   const findings: Finding[] = [];
 
-  // Common subdomains to check
+  // Most common subdomains (reduced for speed)
   const commonSubs = [
-    'www', 'mail', 'ftp', 'admin', 'api', 'dev', 'staging', 'test',
-    'portal', 'login', 'app', 'dashboard', 'cdn', 'media', 'static',
-    'blog', 'shop', 'store', 'pay', 'billing', 'support', 'help',
-    'docs', 'wiki', 'git', 'jenkins', 'ci', 'monitor', 'status',
-    'vpn', 'remote', 'gateway', 'ns1', 'ns2', 'mx', 'smtp', 'webmail',
+    'www', 'mail', 'admin', 'api', 'dev', 'staging', 'test',
+    'portal', 'login', 'app', 'dashboard', 'cdn', 'blog',
+    'shop', 'pay', 'support', 'docs', 'vpn', 'webmail',
   ];
 
   const discovered: Array<{ subdomain: string; ip: string | null }> = [];

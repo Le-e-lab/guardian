@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, Shield, Zap, Lock, AlertTriangle, CheckCircle, XCircle, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Shield, Zap, Lock, AlertTriangle, CheckCircle, XCircle, ChevronDown, ChevronUp, Clock, Download, Trash2, Eye } from 'lucide-react';
 
 interface Finding {
   title: string;
@@ -30,6 +30,20 @@ interface ScanResult {
   risk_summary: string;
   ai_analysis: string;
   details: Finding[];
+  created_at: string;
+}
+
+interface ScanHistoryItem {
+  id: string;
+  target: string;
+  status: string;
+  mode: string;
+  risk_score: number | null;
+  risk_summary: string | null;
+  findings_count: number;
+  critical_count: number;
+  high_count: number;
+  created_at: string;
 }
 
 const SEVERITY_COLORS = {
@@ -46,6 +60,29 @@ export default function ScanInterface() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedFinding, setExpandedFinding] = useState<number | null>(null);
+  const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Load scan history
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const response = await fetch('/api/scan?limit=20');
+      if (response.ok) {
+        const data = await response.json();
+        setScanHistory(data.scans || []);
+      }
+    } catch (err) {
+      console.error('Failed to load history:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   const handleScan = async () => {
     if (!target.trim()) return;
@@ -68,10 +105,48 @@ export default function ScanInterface() {
 
       const data = await response.json();
       setResult(data);
+      loadHistory(); // Refresh history
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadReport = async (scanId: string) => {
+    try {
+      const response = await fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scanId }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sentari-report-${Date.now()}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('Failed to download report:', err);
+    }
+  };
+
+  const handleViewScan = async (scanId: string) => {
+    try {
+      const response = await fetch(`/api/scan/${scanId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setResult(data);
+        setShowHistory(false);
+      }
+    } catch (err) {
+      console.error('Failed to load scan:', err);
     }
   };
 
@@ -103,14 +178,84 @@ export default function ScanInterface() {
               <p className="text-xs text-gray-400">Africa-First Threat Intelligence</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Lock className="w-4 h-4" />
-            <span>Passive Recon Mode</span>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-[#1F2937] rounded-lg transition-all"
+            >
+              <Clock className="w-4 h-4" />
+              History
+              {scanHistory.length > 0 && (
+                <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full text-xs">
+                  {scanHistory.length}
+                </span>
+              )}
+            </button>
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <Lock className="w-4 h-4" />
+              <span>Passive Recon</span>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Scan History Panel */}
+        {showHistory && (
+          <div className="mb-8 bg-[#111827] border border-gray-800 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-cyan-400" />
+              Scan History
+            </h3>
+            {historyLoading ? (
+              <div className="text-center py-8 text-gray-400">Loading history...</div>
+            ) : scanHistory.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">No scans yet</div>
+            ) : (
+              <div className="space-y-3">
+                {scanHistory.map((scan) => (
+                  <div
+                    key={scan.id}
+                    className="flex items-center justify-between p-4 bg-[#1F2937] rounded-xl hover:bg-[#283548] transition-all cursor-pointer"
+                    onClick={() => handleViewScan(scan.id)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`text-2xl font-bold ${scan.risk_score ? getRiskColor(scan.risk_score) : 'text-gray-500'}`}>
+                        {scan.risk_score || '—'}
+                      </div>
+                      <div>
+                        <p className="font-medium">{scan.target}</p>
+                        <p className="text-sm text-gray-400">
+                          {new Date(scan.created_at).toLocaleDateString()} • {scan.findings_count} findings
+                          {scan.critical_count > 0 && (
+                            <span className="text-red-400 ml-2">• {scan.critical_count} critical</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleViewScan(scan.id); }}
+                        className="p-2 hover:bg-gray-700 rounded-lg transition-all"
+                        title="View scan"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDownloadReport(scan.id); }}
+                        className="p-2 hover:bg-gray-700 rounded-lg transition-all"
+                        title="Download report"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Scan Input */}
         <div className="mb-8">
           <div className="max-w-2xl mx-auto">
@@ -170,13 +315,22 @@ export default function ScanInterface() {
                     Scanned in {(result.scan_time_ms / 1000).toFixed(1)}s • {result.tools_run.length} tools used
                   </p>
                 </div>
-                <div className="text-right">
-                  <div className={`text-4xl font-bold ${getRiskColor(result.risk_score)}`}>
-                    {result.risk_score}
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <div className={`text-4xl font-bold ${getRiskColor(result.risk_score)}`}>
+                      {result.risk_score}
+                    </div>
+                    <div className={`text-sm font-medium ${getRiskColor(result.risk_score)}`}>
+                      {getRiskLabel(result.risk_score)}
+                    </div>
                   </div>
-                  <div className={`text-sm font-medium ${getRiskColor(result.risk_score)}`}>
-                    {getRiskLabel(result.risk_score)}
-                  </div>
+                  <button
+                    onClick={() => handleDownloadReport(result.id)}
+                    className="p-3 bg-[#1F2937] hover:bg-[#283548] rounded-xl transition-all"
+                    title="Download report"
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
 
