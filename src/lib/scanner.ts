@@ -3,6 +3,9 @@
  * Passive reconnaissance pipeline using open-source tools
  */
 
+import { runCredentialCheck } from './credentials';
+import { runSocialOSINT } from './social-osint';
+
 export interface ScanConfig {
   target: string;
   mode: 'passive' | 'active';
@@ -52,6 +55,32 @@ export async function runScan(config: ScanConfig): Promise<ReconResult[]> {
   }
   if (config.modules.includes('subdomains')) {
     scanPromises.push(scanSubdomains(config.target));
+  }
+
+  // Credential leak check
+  if (config.modules.includes('credentials')) {
+    scanPromises.push(
+      runCredentialCheck(config.target).then(findings => ({
+        tool: 'credential-check',
+        status: 'success' as const,
+        output: { domain: config.target, findingsCount: findings.length },
+        findings,
+        duration_ms: 0,
+      }))
+    );
+  }
+
+  // Social media OSINT
+  if (config.modules.includes('social')) {
+    scanPromises.push(
+      runSocialOSINT(config.target).then(findings => ({
+        tool: 'social-osint',
+        status: 'success' as const,
+        output: { domain: config.target, findingsCount: findings.length },
+        findings,
+        duration_ms: 0,
+      }))
+    );
   }
 
   // Run all scans in parallel with individual timeouts

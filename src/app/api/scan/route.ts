@@ -93,11 +93,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create scan' }, { status: 500 });
     }
 
-    // Configure scan modules
+    // Configure scan modules (including credential check and social OSINT)
     const config: ScanConfig = {
       target: cleanTarget,
       mode: mode as 'passive' | 'active',
-      modules: ['dns', 'ports', 'tech', 'ssl', 'headers', 'subdomains'],
+      modules: ['dns', 'ports', 'tech', 'ssl', 'headers', 'subdomains', 'credentials', 'social'],
     };
 
     // Run the scan
