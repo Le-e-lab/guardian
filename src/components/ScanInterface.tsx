@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Shield, Zap, Lock, AlertTriangle, CheckCircle, XCircle, ChevronDown, ChevronUp, Clock, Download, Trash2, Eye } from 'lucide-react';
+import { Search, Shield, Zap, Lock, AlertTriangle, CheckCircle, XCircle, ChevronDown, ChevronUp, Clock, Download, Eye, Beaker, Target } from 'lucide-react';
+import { DEMO_TARGETS } from '@/lib/demo-targets';
 
 interface Finding {
   title: string;
@@ -54,6 +55,20 @@ const SEVERITY_COLORS = {
   info: { bg: 'bg-gray-500/10', text: 'text-gray-400', border: 'border-gray-500/30', icon: CheckCircle },
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  security_headers: 'Security Headers',
+  exposed_service: 'Exposed Service',
+  exposed_secrets: 'Exposed Secrets',
+  information_disclosure: 'Info Disclosure',
+  ssl_tls: 'SSL/TLS',
+  subdomain: 'Subdomain',
+  subdomain_osint: 'Subdomain OSINT',
+  credential_leak: 'Credential Leak',
+  social_media: 'Social Media',
+  email_enumeration: 'Email Enumeration',
+  dns: 'DNS',
+};
+
 export default function ScanInterface() {
   const [target, setTarget] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,12 +77,10 @@ export default function ScanInterface() {
   const [expandedFinding, setExpandedFinding] = useState<number | null>(null);
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showDemoTargets, setShowDemoTargets] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // Load scan history
-  useEffect(() => {
-    loadHistory();
-  }, []);
+  useEffect(() => { loadHistory(); }, []);
 
   const loadHistory = async () => {
     setHistoryLoading(true);
@@ -84,18 +97,20 @@ export default function ScanInterface() {
     }
   };
 
-  const handleScan = async () => {
-    if (!target.trim()) return;
+  const handleScan = async (domain?: string) => {
+    const scanTarget = domain || target;
+    if (!scanTarget.trim()) return;
 
     setLoading(true);
     setError(null);
     setResult(null);
+    setTarget(scanTarget);
 
     try {
       const response = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target: target.trim(), mode: 'passive' }),
+        body: JSON.stringify({ target: scanTarget.trim(), mode: 'passive' }),
       });
 
       if (!response.ok) {
@@ -105,7 +120,7 @@ export default function ScanInterface() {
 
       const data = await response.json();
       setResult(data);
-      loadHistory(); // Refresh history
+      loadHistory();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -163,6 +178,14 @@ export default function ScanInterface() {
     if (score >= 40) return 'HIGH RISK';
     return 'CRITICAL RISK';
   };
+
+  // Group findings by category
+  const groupedFindings = result?.details.reduce((acc, finding) => {
+    const cat = finding.category || 'other';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(finding);
+    return acc;
+  }, {} as Record<string, Finding[]>) || {};
 
   return (
     <div className="min-h-screen bg-[#0A0E17] text-white">
@@ -256,11 +279,47 @@ export default function ScanInterface() {
           </div>
         )}
 
+        {/* Demo Targets */}
+        {showDemoTargets && (
+          <div className="mb-8 bg-[#111827] border border-gray-800 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Beaker className="w-5 h-5 text-cyan-400" />
+              Demo Targets
+            </h3>
+            <p className="text-sm text-gray-400 mb-4">Safe, publicly accessible domains for testing</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {DEMO_TARGETS.map((demo) => (
+                <button
+                  key={demo.domain}
+                  onClick={() => { handleScan(demo.domain); setShowDemoTargets(false); }}
+                  disabled={loading}
+                  className="text-left p-4 bg-[#1F2937] border border-gray-700 hover:border-cyan-500/50 rounded-xl transition-all disabled:opacity-50"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Target className="w-4 h-4 text-cyan-400" />
+                    <span className="font-mono text-sm">{demo.domain}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mb-2">{demo.description}</p>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      demo.difficulty === 'easy' ? 'bg-emerald-500/10 text-emerald-400' :
+                      demo.difficulty === 'medium' ? 'bg-yellow-500/10 text-yellow-400' :
+                      'bg-red-500/10 text-red-400'
+                    }`}>
+                      {demo.difficulty}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Scan Input */}
         <div className="mb-8">
           <div className="max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold text-center mb-2">Threat Assessment</h2>
-            <p className="text-gray-400 text-center mb-6">Enter a domain to scan for vulnerabilities</p>
+            <p className="text-gray-400 text-center mb-4">Enter a domain to scan for vulnerabilities</p>
             
             <div className="flex gap-3">
               <div className="flex-1 relative">
@@ -270,13 +329,13 @@ export default function ScanInterface() {
                   value={target}
                   onChange={(e) => setTarget(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleScan()}
-                  placeholder="e.g., econet.co.zw"
+                  placeholder="e.g., example.com"
                   className="w-full pl-12 pr-4 py-4 bg-[#1F2937] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all"
                   disabled={loading}
                 />
               </div>
               <button
-                onClick={handleScan}
+                onClick={() => handleScan()}
                 disabled={loading || !target.trim()}
                 className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-xl font-semibold transition-all flex items-center gap-2"
               >
@@ -291,6 +350,16 @@ export default function ScanInterface() {
                     Scan
                   </>
                 )}
+              </button>
+            </div>
+
+            {/* Demo target toggle */}
+            <div className="text-center mt-4">
+              <button
+                onClick={() => setShowDemoTargets(!showDemoTargets)}
+                className="text-sm text-cyan-400 hover:text-cyan-300 transition-all"
+              >
+                {showDemoTargets ? 'Hide' : 'Show'} demo targets
               </button>
             </div>
           </div>
@@ -312,7 +381,7 @@ export default function ScanInterface() {
                 <div>
                   <h3 className="text-lg font-semibold">{result.target}</h3>
                   <p className="text-sm text-gray-400">
-                    Scanned in {(result.scan_time_ms / 1000).toFixed(1)}s • {result.tools_run.length} tools used
+                    Scanned in {(result.scan_time_ms / 1000).toFixed(1)}s • {result.tools_run.length} modules
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -360,7 +429,7 @@ export default function ScanInterface() {
               <p className="text-gray-300 leading-relaxed">{result.risk_summary}</p>
             </div>
 
-            {/* Findings List */}
+            {/* Findings by Category */}
             <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6">
               <h3 className="text-lg font-semibold mb-4">
                 Vulnerabilities ({result.details.length})
@@ -372,67 +441,74 @@ export default function ScanInterface() {
                   <p>No vulnerabilities detected</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {result.details.map((finding, idx) => {
-                    const config = SEVERITY_COLORS[finding.severity];
-                    const Icon = config.icon;
-                    const isExpanded = expandedFinding === idx;
+                <div className="space-y-6">
+                  {Object.entries(groupedFindings).map(([category, findings]) => (
+                    <div key={category}>
+                      <h4 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-cyan-400 rounded-full" />
+                        {CATEGORY_LABELS[category] || category} ({findings.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {findings.map((finding, idx) => {
+                          const config = SEVERITY_COLORS[finding.severity];
+                          const Icon = config.icon;
+                          const globalIdx = result.details.indexOf(finding);
+                          const isExpanded = expandedFinding === globalIdx;
 
-                    return (
-                      <div
-                        key={idx}
-                        className={`border ${config.border} rounded-xl overflow-hidden`}
-                      >
-                        <button
-                          onClick={() => setExpandedFinding(isExpanded ? null : idx)}
-                          className={`w-full p-4 ${config.bg} flex items-center justify-between text-left`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <Icon className={`w-5 h-5 ${config.text}`} />
-                            <div>
-                              <span className={`text-xs font-medium ${config.text} uppercase`}>
-                                {finding.severity}
-                              </span>
-                              <p className="text-white font-medium">{finding.title}</p>
+                          return (
+                            <div
+                              key={idx}
+                              className={`border ${config.border} rounded-xl overflow-hidden`}
+                            >
+                              <button
+                                onClick={() => setExpandedFinding(isExpanded ? null : globalIdx)}
+                                className={`w-full p-4 ${config.bg} flex items-center justify-between text-left`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Icon className={`w-5 h-5 ${config.text}`} />
+                                  <div>
+                                    <span className={`text-xs font-medium ${config.text} uppercase`}>
+                                      {finding.severity}
+                                    </span>
+                                    <p className="text-white font-medium">{finding.title}</p>
+                                  </div>
+                                </div>
+                                {isExpanded ? (
+                                  <ChevronUp className="w-5 h-5 text-gray-400" />
+                                ) : (
+                                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                                )}
+                              </button>
+                              
+                              {isExpanded && (
+                                <div className="p-4 bg-[#1F2937] border-t border-gray-800">
+                                  <div className="mb-3">
+                                    <span className="text-xs text-gray-400 uppercase">Remediation</span>
+                                    <p className="text-sm text-gray-300">{finding.remediation}</p>
+                                  </div>
+                                  {Object.keys(finding.evidence).length > 0 && (
+                                    <div>
+                                      <span className="text-xs text-gray-400 uppercase">Evidence</span>
+                                      <pre className="text-xs text-gray-400 mt-1 overflow-x-auto bg-[#0A0E17] p-3 rounded-lg">
+                                        {JSON.stringify(finding.evidence, null, 2)}
+                                      </pre>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                          {isExpanded ? (
-                            <ChevronUp className="w-5 h-5 text-gray-400" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5 text-gray-400" />
-                          )}
-                        </button>
-                        
-                        {isExpanded && (
-                          <div className="p-4 bg-[#1F2937] border-t border-gray-800">
-                            <div className="mb-3">
-                              <span className="text-xs text-gray-400 uppercase">Category</span>
-                              <p className="text-sm text-gray-300">{finding.category}</p>
-                            </div>
-                            <div className="mb-3">
-                              <span className="text-xs text-gray-400 uppercase">Remediation</span>
-                              <p className="text-sm text-gray-300">{finding.remediation}</p>
-                            </div>
-                            {Object.keys(finding.evidence).length > 0 && (
-                              <div>
-                                <span className="text-xs text-gray-400 uppercase">Evidence</span>
-                                <pre className="text-xs text-gray-400 mt-1 overflow-x-auto">
-                                  {JSON.stringify(finding.evidence, null, 2)}
-                                </pre>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
 
             {/* Tools Used */}
             <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold mb-4">Scanning Tools Used</h3>
+              <h3 className="text-lg font-semibold mb-4">Scanning Modules</h3>
               <div className="flex flex-wrap gap-2">
                 {result.tools_run.map((tool) => (
                   <span
@@ -447,34 +523,23 @@ export default function ScanInterface() {
           </div>
         )}
 
-        {/* Landing State (no scan yet) */}
+        {/* Landing State */}
         {!result && !loading && !error && (
           <div className="max-w-4xl mx-auto mt-12">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {[
-                {
-                  icon: Search,
-                  title: 'Passive Recon',
-                  desc: 'DNS, subdomains, ports, technology detection',
-                },
-                {
-                  icon: Shield,
-                  title: 'OSINT Analysis',
-                  desc: 'SSL certs, security headers, exposed services',
-                },
-                {
-                  icon: Zap,
-                  title: 'AI-Powered Insights',
-                  desc: 'Risk scoring, attack paths, remediation steps',
-                },
+                { icon: Search, title: 'Recon', desc: 'DNS, ports, tech, subdomains' },
+                { icon: Shield, title: 'OSINT', desc: 'SSL, headers, exposed services' },
+                { icon: Target, title: 'Credentials', desc: 'Breaches, leaked secrets' },
+                { icon: Zap, title: 'AI Analysis', desc: 'Risk scoring, attack paths' },
               ].map(({ icon: Icon, title, desc }) => (
                 <div
                   key={title}
-                  className="p-6 bg-[#111827] border border-gray-800 rounded-2xl text-center"
+                  className="p-5 bg-[#111827] border border-gray-800 rounded-2xl text-center"
                 >
-                  <Icon className="w-10 h-10 text-cyan-400 mx-auto mb-3" />
-                  <h3 className="font-semibold mb-1">{title}</h3>
-                  <p className="text-sm text-gray-400">{desc}</p>
+                  <Icon className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
+                  <h3 className="font-semibold text-sm mb-1">{title}</h3>
+                  <p className="text-xs text-gray-400">{desc}</p>
                 </div>
               ))}
             </div>
@@ -482,7 +547,6 @@ export default function ScanInterface() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-gray-800 mt-12 py-6">
         <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
           SENTARI — Africa-First AI-Native Threat Intelligence • Built for Africa, by Africa
