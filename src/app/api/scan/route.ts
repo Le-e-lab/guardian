@@ -7,6 +7,7 @@ import {
   isModuleAllowed, 
   hasExceededScanLimit, 
   validateAIOutput,
+  isActiveScanningAllowed,
   UserRole 
 } from '@/lib/guardrails';
 import { cleanupExpiredData } from '@/lib/data-retention';

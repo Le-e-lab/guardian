@@ -6,7 +6,7 @@
 
 import { Finding } from './scanner';
 
-interface ActiveScanConfig {
+export interface ActiveScanConfig {
   target: string;
   authorizationToken: string; // Cryptographic proof of authorization
   scope: string[]; // Allowed scan types
