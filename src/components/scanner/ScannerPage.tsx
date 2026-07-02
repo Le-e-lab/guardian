@@ -46,6 +46,21 @@ interface ScanResult {
     mx: { present: boolean; records: string[]; error: string | null; };
     findings: Array<{ title: string; severity: string; category: string; plainEnglish: string; regulation: string; regulationSection: string; remediation: string; }>;
   };
+  virusTotal?: {
+    domain: string;
+    malicious: number;
+    suspicious: number;
+    harmless: number;
+    reputation: number;
+    riskLevel: string;
+    findings: Array<{ title: string; severity: string; plainEnglish: string; }>;
+  };
+  portScan?: {
+    domain: string;
+    openPorts: number;
+    ports: Array<{ port: number; service: string; risk: string; description: string; }>;
+    findings: Array<{ title: string; severity: string; plainEnglish: string; regulation: string; remediation: string; }>;
+  };
 }
 
 const SEVERITY: Record<string, { bg: string; text: string; border: string; icon: typeof XCircle }> = {
@@ -458,6 +473,66 @@ export default function ScannerPage() {
                       <div key={i} className="p-2 rounded-lg bg-red-500/5 border border-red-500/10">
                         <p className="text-xs font-medium text-dark-text">{f.title}</p>
                         <p className="text-[10px] text-brand-500">{f.plainEnglish}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VirusTotal Domain Reputation */}
+            {result.virusTotal && (
+              <div className="bg-dark-surface border border-dark-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold text-dark-text mb-3 font-[family-name:var(--font-display)]">
+                  Domain Reputation (VirusTotal)
+                </h3>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className={`text-2xl font-bold ${result.virusTotal.riskLevel === 'safe' ? 'text-emerald-400' : result.virusTotal.riskLevel === 'suspicious' ? 'text-amber-400' : 'text-red-400'}`}>
+                    {result.virusTotal.riskLevel === 'safe' ? '✓ Safe' : result.virusTotal.riskLevel === 'suspicious' ? '⚠ Suspicious' : result.virusTotal.riskLevel === 'malicious' ? '🚨 Malicious' : '? Unknown'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-2 mb-3 text-center">
+                  <div className="p-2 rounded bg-dark-bg"><span className="text-sm font-bold text-red-400">{result.virusTotal.malicious}</span><p className="text-[10px] text-brand-600">Malicious</p></div>
+                  <div className="p-2 rounded bg-dark-bg"><span className="text-sm font-bold text-amber-400">{result.virusTotal.suspicious}</span><p className="text-[10px] text-brand-600">Suspicious</p></div>
+                  <div className="p-2 rounded bg-dark-bg"><span className="text-sm font-bold text-emerald-400">{result.virusTotal.harmless}</span><p className="text-[10px] text-brand-600">Harmless</p></div>
+                  <div className="p-2 rounded bg-dark-bg"><span className="text-sm font-bold text-brand-400">{result.virusTotal.reputation}</span><p className="text-[10px] text-brand-600">Reputation</p></div>
+                </div>
+                {result.virusTotal.findings.map((f, i) => (
+                  <div key={i} className="p-2 rounded bg-dark-bg text-xs text-brand-400">{f.plainEnglish}</div>
+                ))}
+              </div>
+            )}
+
+            {/* Port Scan */}
+            {result.portScan && (
+              <div className="bg-dark-surface border border-dark-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold text-dark-text mb-3 font-[family-name:var(--font-display)]">
+                  Port Scan
+                </h3>
+                <p className="text-sm text-brand-400 mb-3">
+                  <span className="font-bold text-dark-text">{result.portScan.openPorts}</span> open port(s) detected
+                </p>
+                {result.portScan.ports.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {result.portScan.ports.map((p, i) => (
+                      <span key={i} className={`px-2 py-1 rounded text-xs font-medium ${
+                        p.risk === 'critical' ? 'bg-red-500/20 text-red-400' :
+                        p.risk === 'high' ? 'bg-orange-500/20 text-orange-400' :
+                        p.risk === 'medium' ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-brand-500/10 text-brand-400'
+                      }`}>
+                        {p.port}/{p.service}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {result.portScan.findings.length > 0 && (
+                  <div className="space-y-2">
+                    {result.portScan.findings.map((f, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-red-500/5 border border-red-500/10">
+                        <p className="text-xs font-medium text-dark-text mb-1">{f.title}</p>
+                        <p className="text-[10px] text-brand-500">{f.plainEnglish}</p>
+                        <p className="text-[10px] text-emerald-400 mt-1">Fix: {f.remediation}</p>
                       </div>
                     ))}
                   </div>
