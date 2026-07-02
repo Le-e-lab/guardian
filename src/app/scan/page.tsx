@@ -54,6 +54,36 @@ interface ScanResult {
   ai_analysis: string;
   disclaimers: string[];
   created_at: string;
+  compliance?: {
+    overallScore: number;
+    regulations: Array<{
+      name: string;
+      score: number;
+      passed: number;
+      failed: number;
+      total: number;
+      criticalFailures: Array<{
+        control: string;
+        section: string;
+        title: string;
+        plainEnglish: string;
+        remediation: string;
+        effort: string;
+      }>;
+    }>;
+    failedControls: Array<{
+      id: string;
+      regulation: string;
+      section: string;
+      title: string;
+      plainEnglish: string;
+      remediation: string;
+      effort: string;
+      actual: string;
+      expected: string;
+    }>;
+    context: Record<string, unknown>;
+  };
 }
 
 export default function ScanPage() {
@@ -234,6 +264,79 @@ export default function ScanPage() {
                 Total: {result.findings.total} findings across all modules
               </p>
             </div>
+
+            {/* Compliance Status */}
+            {result.compliance && (
+              <div className="p-6 border-b border-brand-200/50">
+                <p className="text-xs text-brand-500 uppercase tracking-wider mb-3">Compliance Status</p>
+                <p className="text-xs text-brand-600 mb-4">
+                  Based on detected technologies and site configuration, here is your compliance posture:
+                </p>
+                
+                {/* Regulation Scores */}
+                <div className="space-y-3 mb-4">
+                  {result.compliance.regulations.map((reg, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-brand-800">{reg.name}</span>
+                          <span className={`text-sm font-bold ${reg.score >= 80 ? 'text-green-600' : reg.score >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {reg.score}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-brand-100 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full ${reg.score >= 80 ? 'bg-green-500' : reg.score >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                            style={{ width: `${reg.score}%` }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-brand-500 mt-1">
+                          {reg.passed}/{reg.total} controls passed
+                          {reg.failed > 0 && ` • ${reg.failed} failed`}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Failed Controls with Plain English */}
+                {result.compliance.failedControls.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs font-semibold text-red-600 uppercase tracking-wider mb-2">
+                      What Needs Fixing ({result.compliance.failedControls.length} issues)
+                    </p>
+                    <div className="space-y-3">
+                      {result.compliance.failedControls.map((fc, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-red-50/50 border border-red-200/50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-red-100 text-red-700">
+                              {fc.regulation}
+                            </span>
+                            <span className="text-[10px] text-brand-500">{fc.section}</span>
+                          </div>
+                          <p className="text-sm font-medium text-brand-800 mb-1">{fc.title}</p>
+                          <p className="text-xs text-brand-600 mb-2">{fc.plainEnglish}</p>
+                          <div className="flex items-center gap-2 text-[10px]">
+                            <span className="text-red-500">Found: {fc.actual}</span>
+                            <span className="text-brand-400">•</span>
+                            <span className="text-green-600">Expected: {fc.expected}</span>
+                          </div>
+                          <p className="text-[10px] text-brand-500 mt-1 italic">Fix: {fc.remediation}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {result.compliance.failedControls.length === 0 && (
+                  <div className="p-4 rounded-lg bg-green-50 border border-green-200 text-center">
+                    <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                    <p className="text-sm font-semibold text-green-800">All compliance controls passed</p>
+                    <p className="text-xs text-green-600">Your site meets the checked regulatory requirements</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Findings List (Preview) */}
             {result.details.length > 0 && (

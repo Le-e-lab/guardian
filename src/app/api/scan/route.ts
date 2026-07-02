@@ -18,6 +18,7 @@ import { runActiveScan, ActiveScanConfig } from '@/lib/active-scan';
 import { requireAuth, getAuthUser } from '@/lib/auth-middleware';
 import { isOffensiveScanningEnabled, hasOffensiveAccess } from '@/lib/feature-flags';
 import { detectBot, checkFreeScanLimit } from '@/lib/bot-detection';
+import { runComplianceCheck } from '@/lib/compliance-checker';
 
 // Enhanced rate limiting with cleanup
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -282,6 +283,14 @@ export async function POST(request: NextRequest) {
 
     cleanupExpiredData().catch(err => console.error('[RETENTION]', err));
 
+    // Run compliance check (always, regardless of tier)
+    let complianceData = null;
+    try {
+      complianceData = await runComplianceCheck(cleanTarget);
+    } catch (err) {
+      console.error('[COMPLIANCE] Check failed:', err);
+    }
+
     const threatLevel = calculateThreatLevel(allFindings);
 
     // Build full response first
@@ -339,6 +348,39 @@ export async function POST(request: NextRequest) {
       details: visibleFindings,
       created_at: scanTarget.created_at,
       upgrade_gated: !vis.showAIAnalysis || !vis.showFindingDetails || !vis.showAttackPaths,
+      // Compliance data — always included
+      compliance: complianceData ? {
+        overallScore: complianceData.overallScore,
+        regulations: complianceData.regulationScores.map(rs => ({
+          name: rs.displayName,
+          score: rs.score,
+          passed: rs.passedControls,
+          failed: rs.failedControls,
+          total: rs.totalControls,
+          criticalFailures: rs.criticalFailures.map(cf => ({
+            control: cf.control.id,
+            section: cf.control.section,
+            title: cf.control.title,
+            plainEnglish: cf.control.plainEnglish,
+            remediation: cf.control.remediation,
+            effort: cf.control.remediationEffort,
+          })),
+        })),
+        failedControls: complianceData.allResults
+          .filter(r => !r.passed)
+          .map(r => ({
+            id: r.control.id,
+            regulation: r.control.regulation,
+            section: r.control.section,
+            title: r.control.title,
+            plainEnglish: r.control.plainEnglish,
+            remediation: r.control.remediation,
+            effort: r.control.remediationEffort,
+            actual: r.actualValue,
+            expected: r.expectedValue,
+          })),
+        context: complianceData.context,
+      } : null,
       disclaimers: [
         'This assessment is for authorized security testing only.',
         'Unauthorized scanning is illegal.',
