@@ -8,6 +8,30 @@ import SignInModal from '@/components/auth/SignInModal';
 
 type ScanStatus = 'idle' | 'scanning' | 'done' | 'error' | 'requires_auth';
 
+function getScoreColor(score: number) {
+  if (score >= 80) return 'text-green-500';
+  if (score >= 60) return 'text-yellow-500';
+  if (score >= 40) return 'text-orange-500';
+  return 'text-red-500';
+}
+
+function getScoreBg(score: number) {
+  if (score >= 80) return 'bg-green-500/10 border-green-500/20';
+  if (score >= 60) return 'bg-yellow-500/10 border-yellow-500/20';
+  if (score >= 40) return 'bg-orange-500/10 border-orange-500/20';
+  return 'bg-red-500/10 border-red-500/20';
+}
+
+function getSeverityColor(sev: string) {
+  switch (sev) {
+    case 'critical': return 'bg-red-500/10 text-red-600 border-red-500/20';
+    case 'high': return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
+    case 'medium': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
+    case 'low': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
+    default: return 'bg-gray-500/10 text-gray-600 border-gray-500/20';
+  }
+}
+
 interface ScanResult {
   id: string;
   target: string;
@@ -41,61 +65,31 @@ export default function ScanPage() {
 
   const handleScan = async () => {
     if (!domain.trim()) return;
-
     setStatus('scanning');
     setError('');
     setResult(null);
-
     try {
       const res = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target: domain.trim(), mode: 'passive' }),
       });
-
       const data = await res.json();
-
       if (res.status === 401 && data.requiresAuth) {
         setStatus('requires_auth');
         setError(data.upgradePrompt || 'Please sign in to continue scanning.');
         return;
       }
-
       if (!res.ok) {
         setStatus('error');
         setError(data.error || 'Scan failed. Please try again.');
         return;
       }
-
       setResult(data);
       setStatus('done');
     } catch {
       setStatus('error');
       setError('Network error. Please check your connection and try again.');
-    }
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-500';
-    if (score >= 60) return 'text-yellow-500';
-    if (score >= 40) return 'text-orange-500';
-    return 'text-red-500';
-  };
-
-  const getScoreBg = (score: number) => {
-    if (score >= 80) return 'bg-green-500/10 border-green-500/20';
-    if (score >= 60) return 'bg-yellow-500/10 border-yellow-500/20';
-    if (score >= 40) return 'bg-orange-500/10 border-orange-500/20';
-    return 'bg-red-500/10 border-red-500/20';
-  };
-
-  const getSeverityColor = (sev: string) => {
-    switch (sev) {
-      case 'critical': return 'bg-red-500/10 text-red-600 border-red-500/20';
-      case 'high': return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
-      case 'medium': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
-      case 'low': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-      default: return 'bg-gray-500/10 text-gray-600 border-gray-500/20';
     }
   };
 
@@ -212,6 +206,11 @@ export default function ScanPage() {
               </div>
             )}
 
+            {/* AI Analysis (Parsed) */}
+            {result.ai_analysis && !result.ai_analysis.includes('available on Starter') && (
+              <AIAnalysisSection analysis={result.ai_analysis} />
+            )}
+
             {/* Upgrade Gate */}
             {result.upgrade_gated && (
               <div className="p-6 bg-brand-500/5">
@@ -289,6 +288,153 @@ export default function ScanPage() {
 
       <Footer />
       {showSignIn && <SignInModal onClose={() => setShowSignIn(false)} />}
+    </div>
+  );
+}
+
+/* =====================================================================
+   AI ANALYSIS SECTION — Parses raw JSON from AI and renders beautifully
+   ===================================================================== */
+
+interface ParsedAnalysis {
+  risk_score?: number;
+  overall_score?: number;
+  summary?: string;
+  risk_summary?: string;
+  critical_findings?: string[];
+  attack_paths?: Array<{
+    name: string;
+    description: string;
+    severity: string;
+    steps: string[];
+  }>;
+  remediation_priority?: Array<{
+    action: string;
+    why: string;
+    effort: string;
+  }>;
+  african_context?: string;
+}
+
+function AIAnalysisSection({ analysis }: { analysis: string }) {
+  // Try to parse JSON from the analysis string
+  let parsed: ParsedAnalysis = {};
+  let isJson = false;
+
+  try {
+    const jsonMatch = analysis.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      parsed = JSON.parse(jsonMatch[0]);
+      isJson = true;
+    }
+  } catch {
+    // Not JSON — render as plain text
+  }
+
+  // If not JSON or no useful fields, render as formatted text
+  if (!isJson || (!parsed.critical_findings && !parsed.remediation_priority && !parsed.attack_paths)) {
+    return (
+      <div className="p-6 border-b border-brand-200/50">
+        <p className="text-xs text-brand-500 uppercase tracking-wider mb-3">AI Analysis</p>
+        <div className="text-sm text-brand-700 leading-relaxed whitespace-pre-wrap bg-brand-50/50 rounded-lg p-4">
+          {analysis}
+        </div>
+      </div>
+    );
+  }
+
+  const score = parsed.risk_score || parsed.overall_score || 0;
+  const summary = parsed.risk_summary || parsed.summary || '';
+  const criticals = parsed.critical_findings || [];
+  const attackPaths = parsed.attack_paths || [];
+  const remediation = parsed.remediation_priority || [];
+  const africanContext = parsed.african_context;
+
+  return (
+    <div className="p-6 border-b border-brand-200/50">
+      <p className="text-xs text-brand-500 uppercase tracking-wider mb-4">AI Threat Analysis</p>
+
+      {/* Summary */}
+      {summary && (
+        <div className="mb-5 p-4 bg-brand-50/80 rounded-xl border border-brand-200/50">
+          <p className="text-sm text-brand-700 leading-relaxed">{summary}</p>
+        </div>
+      )}
+
+      {/* Critical Findings */}
+      {criticals.length > 0 && (
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-red-600 uppercase tracking-wider mb-2">Critical Findings</p>
+          <div className="space-y-2">
+            {criticals.map((finding, i) => (
+              <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-red-50/50 border border-red-200/50">
+                <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                <span className="text-sm text-red-800">{finding.replace(/^\[.*?\]\s*/, '')}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Attack Paths */}
+      {attackPaths.length > 0 && (
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider mb-2">Attack Paths</p>
+          <div className="space-y-3">
+            {attackPaths.map((path, i) => (
+              <div key={i} className="p-4 rounded-lg bg-orange-50/50 border border-orange-200/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase border ${getSeverityColor(path.severity)}`}>
+                    {path.severity}
+                  </span>
+                  <span className="text-sm font-semibold text-brand-800">{path.name}</span>
+                </div>
+                <p className="text-xs text-brand-600 mb-2">{path.description}</p>
+                {path.steps.length > 0 && (
+                  <ol className="list-decimal pl-4 space-y-1">
+                    {path.steps.map((step, j) => (
+                      <li key={j} className="text-xs text-brand-600">{step}</li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Remediation */}
+      {remediation.length > 0 && (
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-green-600 uppercase tracking-wider mb-2">Remediation Priority</p>
+          <div className="space-y-2">
+            {remediation.map((item, i) => (
+              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-green-50/50 border border-green-200/50">
+                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-brand-800">{item.action}</p>
+                  <p className="text-xs text-brand-600 mt-0.5">{item.why}</p>
+                  <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-medium ${
+                    item.effort === 'low' ? 'bg-green-100 text-green-700' :
+                    item.effort === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {item.effort} effort
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* African Context */}
+      {africanContext && (
+        <div className="p-4 bg-brand-50/80 rounded-xl border border-brand-200/50">
+          <p className="text-xs font-semibold text-brand-600 uppercase tracking-wider mb-1">African Context</p>
+          <p className="text-sm text-brand-700">{africanContext}</p>
+        </div>
+      )}
     </div>
   );
 }
