@@ -55,11 +55,19 @@ export default function ScannerPage() {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [subscriptionTier, setSubscriptionTier] = useState('free');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ? { id: session.user.id, email: session.user.email || '' } : null);
       setAuthReady(true);
+      // Fetch subscription tier
+      if (session?.user) {
+        supabase.from('profiles').select('subscription_tier, role').eq('id', session.user.id).single()
+          .then(({ data }) => {
+            if (data) setSubscriptionTier(data.subscription_tier || data.role || 'free');
+          });
+      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
       setUser(s?.user ? { id: s.user.id, email: s.user.email || '' } : null);
@@ -172,7 +180,7 @@ export default function ScannerPage() {
                 <div className="absolute right-0 top-full mt-2 w-56 bg-dark-surface border border-dark-border rounded-xl shadow-2xl overflow-hidden z-50 animate-slide-down">
                   <div className="px-4 py-3 border-b border-dark-border">
                     <p className="text-sm font-medium text-dark-text">{user.email}</p>
-                    <p className="text-xs text-brand-500 mt-0.5">Free Plan</p>
+                    <p className="text-xs text-brand-500 mt-0.5 capitalize">{subscriptionTier} Plan</p>
                   </div>
                   <button
                     onClick={handleSignOut}
@@ -226,8 +234,8 @@ export default function ScannerPage() {
                 ))}
               </div>
               )}
-              {/* Upgrade banner for free tier */}
-              {result?.upgrade_gated && result?.findings?.total > 0 && (
+              {/* Upgrade banner for free tier — hidden for enterprise */}
+              {result?.upgrade_gated && result?.findings?.total > 0 && subscriptionTier === 'free' && (
                 <div className="mt-4 p-4 bg-brand-500/10 border border-brand-500/20 rounded-xl">
                   <div className="flex items-start gap-3">
                     <Lock className="w-5 h-5 text-brand-500 mt-0.5 flex-shrink-0" />

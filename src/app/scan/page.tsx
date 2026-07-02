@@ -159,11 +159,57 @@ export default function ScanPage() {
                     </span>
                     <span className="text-brand-500 text-sm">/100</span>
                   </div>
+                  <p className="text-xs text-brand-600 mt-1 font-medium">
+                    {result.risk_score >= 80 ? '✅ Good security posture' :
+                     result.risk_score >= 60 ? '⚠️ Moderate risk — improvements needed' :
+                     result.risk_score >= 40 ? '🔴 High risk — action required' :
+                     '🚨 Critical risk — immediate attention needed'}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-brand-500 mb-1">Target</p>
                   <p className="font-mono text-sm text-brand-800">{result.target}</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Score Breakdown — WHY this score */}
+            <div className="p-6 border-b border-brand-200/50">
+              <p className="text-xs text-brand-500 uppercase tracking-wider mb-3">Why this score?</p>
+              <div className="space-y-2">
+                {result.findings.critical > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    <span className="text-red-700 font-medium">{result.findings.critical} critical issue(s) — each majorly impacts your score</span>
+                  </div>
+                )}
+                {result.findings.high > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-2 h-2 rounded-full bg-orange-500" />
+                    <span className="text-orange-700 font-medium">{result.findings.high} high-severity finding(s) — significant security gaps</span>
+                  </div>
+                )}
+                {result.findings.medium > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                    <span className="text-yellow-700 font-medium">{result.findings.medium} medium finding(s) — best-practice improvements needed</span>
+                  </div>
+                )}
+                {result.findings.low > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="text-blue-700 font-medium">{result.findings.low} low finding(s) — minor recommendations</span>
+                  </div>
+                )}
+                {result.findings.total === 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-green-700 font-medium">No issues detected — strong security posture</span>
+                  </div>
+                )}
+                <p className="text-xs text-brand-500 mt-3 pt-3 border-t border-brand-200/50">
+                  Score is calculated from: security headers ({'{'}HSTS, CSP, X-Frame-Options, etc.{'}'}), SSL/TLS configuration, open ports, subdomain exposure, and technology vulnerabilities. Each finding reduces your score based on severity.
+                </p>
               </div>
             </div>
 
