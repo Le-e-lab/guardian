@@ -16,9 +16,9 @@ const ibmPlexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'SENTARI — Africa-First AI-Native Cyber Defense',
-  description: 'AI-native offensive cyber validation platform built for Africa. Automated vulnerability scanning powered by multi-model AI reasoning. Priced for African budgets.',
-  keywords: ['cybersecurity', 'Africa', 'threat intelligence', 'penetration testing', 'vulnerability assessment', 'AI security', 'Zimbabwe', 'Nigeria', 'Kenya'],
+  title: 'SENTARI — POPIA Compliance Scanner for South Africa',
+  description: 'AI-powered POPIA compliance scanning for South Africa. Automated assessments, audit-ready reports, and remediation guidance. Data sovereign. From $49/mo.',
+  keywords: ['POPIA', 'data protection', 'compliance', 'South Africa', 'Information Regulator', 'GDPR', 'NDPA', 'Kenya DPA', 'AI compliance', 'audit-ready'],
 };
 
 export default function RootLayout({

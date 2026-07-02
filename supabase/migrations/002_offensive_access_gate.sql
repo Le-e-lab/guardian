@@ -5,7 +5,7 @@
 
 -- 1. FEATURE FLAGS — Global feature toggles
 CREATE TABLE IF NOT EXISTS feature_flags (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     feature_name VARCHAR(100) UNIQUE NOT NULL,
     enabled BOOLEAN DEFAULT FALSE,
     enabled_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
@@ -24,7 +24,7 @@ ON CONFLICT (feature_name) DO NOTHING;
 
 -- 2. OFFENSIVE ACCESS REQUESTS — Verification gate for offensive testing
 CREATE TABLE IF NOT EXISTS offensive_access_requests (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
     target_domain VARCHAR(255) NOT NULL,
     verification_method VARCHAR(50) NOT NULL CHECK (verification_method IN (
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS offensive_access_requests (
 
 -- 3. OFFENSIVE SCAN LOG — Audit trail for offensive testing
 CREATE TABLE IF NOT EXISTS offensive_scan_log (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     access_request_id UUID REFERENCES offensive_access_requests(id) ON DELETE CASCADE NOT NULL,
     user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
     target_domain VARCHAR(255) NOT NULL,
