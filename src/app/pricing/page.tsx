@@ -12,7 +12,7 @@ const TIERS = [
     price: '$0',
     period: '/forever',
     desc: 'See your risk score. Know you have problems.',
-    features: ['1 scan per 24 hours', 'Risk score & severity breakdown', 'Top 3 findings preview', 'No login required', 'No remediation steps', 'No AI analysis'],
+    features: ['1 scan per month', 'Risk score & severity breakdown', 'Top 3 findings preview', 'No login required', 'No remediation steps', 'No AI analysis'],
     cta: 'Scan Free Now',
     ctaLink: '/scan',
     highlighted: false,

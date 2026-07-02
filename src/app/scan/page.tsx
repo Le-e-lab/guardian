@@ -138,7 +138,7 @@ export default function ScanPage() {
               </button>
             </div>
             <p className="text-xs text-brand-500 mt-3">
-              1 free scan per 24 hours. No account needed. Passive reconnaissance only.
+              1 free scan per month. No account needed. Passive reconnaissance only.
             </p>
           </div>
         </div>

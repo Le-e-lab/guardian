@@ -92,7 +92,7 @@ export default function TermsOfService() {
               The free tier provides limited access for evaluation purposes. Free tier users:
             </p>
             <ul className="list-disc pl-6 text-gray-700 space-y-2 mt-2">
-              <li>Receive 1 free scan per 24-hour period</li>
+              <li>Receive 1 free scan per month</li>
               <li>See limited results (risk score and finding count only)</li>
               <li>Do not have access to detailed remediation or AI analysis</li>
               <li>Data is retained for 24 hours only</li>

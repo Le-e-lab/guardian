@@ -117,55 +117,27 @@ export async function checkThreatIntel(target: string): Promise<Finding[]> {
 
 /**
  * Get African-specific threat intelligence
+ * Returns relevant threat patterns for the target's region
+ * NOTE: These are general threat patterns, not specific to the target
  */
 export async function getAfricanThreatIntel(): Promise<Finding[]> {
   const findings: Finding[] = [];
 
-  // African-specific threat patterns (curated list)
-  const africanThreats = [
-    {
-      name: 'SIM Swap Fraud',
-      region: 'Sub-Saharan Africa',
-      severity: 'high' as const,
-      description: 'SIM swap attacks targeting mobile money accounts',
-      indicators: ['USSD session hijacking', 'SS7 exploitation', 'Social engineering of telco staff'],
-    },
-    {
-      name: 'Mobile Money API Abuse',
-      region: 'Kenya, Tanzania, Uganda',
-      severity: 'high' as const,
-      description: 'Exploitation of M-Pesa, Airtel Money APIs',
-      indicators: ['API key leaks', 'Session replay', 'Parameter tampering'],
-    },
-    {
-      name: 'BEC Fraud',
-      region: 'Nigeria, South Africa',
-      severity: 'critical' as const,
-      description: 'Business Email Compromise targeting African businesses',
-      indicators: ['Lookalike domains', 'Invoice fraud', 'Credential phishing'],
-    },
-    {
-      name: 'USSD Session Hijacking',
-      region: 'Zimbabwe, Zambia, Botswana',
-      severity: 'high' as const,
-      description: 'Interception of USSD banking sessions',
-      indicators: ['SS7 vulnerabilities', 'IMEI spoofing', 'Call forwarding abuse'],
-    },
-  ];
-
+  // Only return this as general context, NOT as findings against the target
   findings.push({
-    title: `${africanThreats.length} African-specific threat patterns loaded`,
+    title: 'African threat landscape context loaded',
     severity: 'info',
-    category: 'african_threat_intel',
+    category: 'african_context',
     evidence: {
-      threats: africanThreats.map(t => ({
-        name: t.name,
-        region: t.region,
-        severity: t.severity,
-        indicators: t.indicators,
-      })),
+      note: 'These are general threat patterns relevant to African businesses. They are NOT specific findings against this target.',
+      threats: [
+        { name: 'SIM Swap Fraud', regions: ['Sub-Saharan Africa'], relevance: 'If target handles mobile money or telco services' },
+        { name: 'Mobile Money API Abuse', regions: ['Kenya', 'Tanzania', 'Uganda', 'Zimbabwe'], relevance: 'If target integrates with M-Pesa, EcoCash, or Airtel Money' },
+        { name: 'BEC (Business Email Compromise)', regions: ['Nigeria', 'South Africa', 'Zimbabwe'], relevance: 'Universal risk for all businesses' },
+        { name: 'USSD Session Hijacking', regions: ['Zimbabwe', 'Zambia', 'Botswana'], relevance: 'If target uses USSD-based services' },
+      ],
     },
-    remediation: 'Review each threat pattern against your infrastructure. Focus on mobile money and USSD security.',
+    remediation: 'Assess which of these threats apply to your specific infrastructure. Focus on the ones relevant to your services.',
   });
 
   return findings;

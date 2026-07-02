@@ -116,7 +116,7 @@ export function detectBot(
  */
 export function checkFreeScanLimit(ip: string): { allowed: boolean; remaining: number } {
   const FREE_SCAN_LIMIT = 1;
-  const FREE_WINDOW = 24 * 60 * 60 * 1000; // 24 hours
+  const FREE_WINDOW = 30 * 24 * 60 * 60 * 1000; // 30 days (1 per month)
 
   const now = Date.now();
   const record = ipTracker.get(`${ip}:free`);

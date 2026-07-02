@@ -179,7 +179,50 @@ function generateReportHTML(target: Record<string, unknown>, vulns: Record<strin
 
     <div class="section">
       <div class="section-title">AI Threat Analysis</div>
-      <p class="summary-text">${analysis?.risk_summary || 'No analysis available'}</p>
+      ${(() => {
+        // Try to parse AI analysis JSON for structured display
+        try {
+          const analysisOutput = String((analysis as Record<string, unknown>)?.analysis_output || '');
+          const riskSummary = String((analysis as Record<string, unknown>)?.risk_summary || '');
+          const jsonMatch = analysisOutput.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            const summary = parsed.risk_summary || parsed.summary || riskSummary || 'No analysis available';
+            const criticals = parsed.critical_findings || [];
+            const remediation = parsed.remediation_priority || [];
+            let html = '<p class="summary-text">' + summary + '</p>';
+            if (criticals.length > 0) {
+              html += '<div style="margin-top: 16px;"><strong style="color: #EF4444;">Critical Issues:</strong><ul style="margin-top: 8px; padding-left: 20px; color: #D1D5DB;">';
+              criticals.forEach((c: string) => { html += '<li style="margin-bottom: 4px;">' + c.replace(/^\[.*?\]\s*/, '') + '</li>'; });
+              html += '</ul></div>';
+            }
+            if (remediation.length > 0) {
+              html += '<div style="margin-top: 16px;"><strong style="color: #10B981;">What To Do:</strong><ol style="margin-top: 8px; padding-left: 20px; color: #D1D5DB;">';
+              remediation.forEach((r: { action: string; why: string; effort: string }) => { html += '<li style="margin-bottom: 4px;"><strong>' + r.action + '</strong> — ' + r.why + ' <em style="color: #9CA3AF;">(' + r.effort + ' effort)</em></li>'; });
+              html += '</ol></div>';
+            }
+            return html;
+          }
+        } catch { /* fall through */ }
+        return '<p class="summary-text">' + (String((analysis as Record<string, unknown>)?.risk_summary || '') || 'No analysis available') + '</p>';
+      })()}
+    </div>
+
+    <div class="section">
+      <div class="section-title">Compliance Impact</div>
+      <div style="color: #D1D5DB; line-height: 1.8;">
+        <p style="margin-bottom: 12px;"><strong style="color: #F9FAFB;">What these findings mean for your business:</strong></p>
+        <ul style="padding-left: 20px;">
+          ${critical > 0 ? '<li style="margin-bottom: 8px;"><span style="color: #EF4444; font-weight: 600;">Critical findings</span> could allow an attacker to access your systems, steal data, or disrupt operations. Under Zimbabwe\'s Cyber and Data Protection Act, you may be required to report data breaches within 72 hours.</li>' : ''}
+          ${high > 0 ? '<li style="margin-bottom: 8px;"><span style="color: #F97316; font-weight: 600;">High findings</span> represent significant security gaps that could be exploited. These should be addressed within 30 days to maintain compliance posture.</li>' : ''}
+          ${medium > 0 ? '<li style="margin-bottom: 8px;"><span style="color: #F59E0B; font-weight: 600;">Medium findings</span> are security improvements that reduce your attack surface. Address during regular maintenance cycles.</li>' : ''}
+          ${low > 0 ? '<li style="margin-bottom: 8px;"><span style="color: #3B82F6; font-weight: 600;">Low findings</span> are best-practice recommendations. While not urgent, addressing them improves your overall security posture.</li>' : ''}
+          ${critical === 0 && high === 0 ? '<li style="margin-bottom: 8px;"><span style="color: #10B981; font-weight: 600;">Good news:</span> No critical or high-severity issues were found. Your basic security hygiene is solid.</li>' : ''}
+        </ul>
+        <p style="margin-top: 16px; padding: 12px; background: #1F2937; border-radius: 8px; font-size: 13px;">
+          <strong>⚠️ Disclaimer:</strong> This automated assessment covers external-facing security controls only. It does not replace a full penetration test or compliance audit. For comprehensive compliance (POPIA, NDPA, Kenya DPA), engage a qualified security assessor.
+        </p>
+      </div>
     </div>
 
     <div class="section">
