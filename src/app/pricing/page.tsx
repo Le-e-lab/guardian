@@ -10,40 +10,40 @@ const TIERS = [
   {
     name: 'Free',
     price: '$0',
-    period: '/forever',
-    desc: 'See your risk score. Know you have problems.',
-    features: ['1 scan per month', 'Risk score & severity breakdown', 'Top 3 findings preview', 'No login required', 'No remediation steps', 'No AI analysis'],
-    cta: 'Scan Free Now',
+    period: '/beta',
+    desc: 'Full access during beta. Feedback welcome.',
+    features: ['Unlimited scans during beta', 'All scanning modules', 'Compliance reports', 'AI-powered analysis', 'PDF export', 'Priority support'],
+    cta: 'Start Free Now',
     ctaLink: '/scan',
     highlighted: false,
   },
   {
     name: 'Starter',
-    price: '$49',
+    price: 'TBA',
     period: '/mo',
-    desc: 'The full picture. Fix what matters.',
-    features: ['15 scans per day', 'Full recon + OSINT', 'AI threat analysis', 'Remediation steps for every finding', 'PDF report export', 'EcoCash payment'],
-    cta: 'Get Started',
-    ctaLink: '/scan',
+    desc: 'Coming after beta. Sign up to lock in rates.',
+    features: ['15 scans per day', 'Full recon + OSINT', 'AI threat analysis', 'Remediation steps', 'PDF report export', 'EcoCash payment'],
+    cta: 'Join Waitlist',
+    ctaLink: '/',
     highlighted: true,
   },
   {
     name: 'Professional',
-    price: '$149',
+    price: 'TBA',
     period: '/mo',
-    desc: 'Deeper intelligence, team access.',
+    desc: 'Coming after beta. Sign up to lock in rates.',
     features: ['50 scans per day', 'Everything in Starter', 'Attack path visualization', 'Credential leak check', 'Social media OSINT', 'REST API access'],
-    cta: 'Go Professional',
-    ctaLink: '/scan',
+    cta: 'Join Waitlist',
+    ctaLink: '/',
     highlighted: false,
   },
   {
     name: 'Enterprise',
-    price: '$499',
+    price: 'TBA',
     period: '/mo',
-    desc: 'Active testing & compliance.',
-    features: ['Unlimited scans', 'Everything in Professional', 'Active vulnerability testing', 'Continuous monitoring', 'Compliance templates (POPIA, NDPA)', 'Dedicated support & SLA'],
-    cta: 'Contact Sales',
+    desc: 'Coming after beta. Contact for early access.',
+    features: ['Unlimited scans', 'Everything in Professional', 'Active vulnerability testing', 'Continuous monitoring', 'Compliance templates', 'Dedicated support'],
+    cta: 'Contact Us',
     ctaLink: 'mailto:hello@sentari.dev',
     highlighted: false,
   },
@@ -68,10 +68,10 @@ export default function PricingPage() {
         <div className="relative z-10 max-w-4xl mx-auto px-6 pt-20 sm:pt-28 pb-16 text-center">
           <p className="text-xs text-brand-500 uppercase tracking-widest mb-4 font-medium">// Pricing</p>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 font-[family-name:var(--font-display)]">
-            Built for Zimbabwe.<br /><span className="gradient-text">Priced for Africa.</span>
+            Currently in <span className="gradient-text">Beta</span>
           </h1>
           <p className="text-lg text-brand-600 max-w-2xl mx-auto leading-relaxed">
-            Enterprise security at a fraction of global prices. Pay with EcoCash. Scale when you&apos;re ready.
+            We&apos;re offering free access while we gather feedback from early users. Pricing will be announced after beta. Sign up now to lock in founding member rates.
           </p>
         </div>
       </section>
@@ -84,7 +84,7 @@ export default function PricingPage() {
             { label: 'Pentera', price: '$35K+/yr', active: false },
             { label: 'XBOW', price: '$6K+/test', active: false },
             { label: 'Cybervergent', price: 'Custom', active: false },
-            { label: 'Sentari', price: '$49/mo', active: true },
+            { label: 'Sentari', price: 'Beta (Free)', active: true },
           ].map(({ label, price, active }) => (
             <div key={label} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm border transition-all ${
               active ? 'bg-brand-500 text-white border-brand-500 font-semibold shadow-lg shadow-brand-500/20' : 'bg-brand-100/50 text-brand-600 border-brand-200/50'
@@ -130,7 +130,7 @@ export default function PricingPage() {
         {/* Payment Methods */}
         <div className="mt-8 text-center">
           <p className="text-sm text-brand-500">
-            <strong className="text-brand-600">Pay with:</strong> EcoCash · OneMoney · InnBucks · Visa/Mastercard · Bank Transfer
+            <strong className="text-brand-600">Beta:</strong> All features free during beta period. Pricing announced after feedback phase.
           </p>
         </div>
       </section>
@@ -164,7 +164,7 @@ export default function PricingPage() {
                   <td className="px-5 py-3.5 font-semibold text-brand-800">Sentari</td>
                   <td className="px-5 py-3.5 text-brand-600">Zimbabwe</td>
                   <td className="px-5 py-3.5 text-brand-600">AI-native offensive validation</td>
-                  <td className="px-5 py-3.5 text-brand-500 font-bold">$49/mo</td>
+                  <td className="px-5 py-3.5 text-brand-500 font-bold">Free (Beta)</td>
                   <td className="px-5 py-3.5 text-brand-600 hidden sm:table-cell">Only platform that is both AI-native/offensive AND Africa-local/sovereign</td>
                 </tr>
               </tbody>
