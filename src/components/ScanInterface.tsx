@@ -158,7 +158,7 @@ export default function ScanInterface() {
               <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">will find first.</span>
             </h1>
             <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Automated vulnerability scanning powered by 9 AI models. Built for African businesses. Priced for African budgets.
+              Automated vulnerability scanning powered by multi-model AI. Built for African businesses. Priced for African budgets.
             </p>
             <button onClick={() => setShowSignIn(true)}
               className="px-8 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl font-semibold text-white transition-all shadow-lg shadow-cyan-500/25 inline-flex items-center gap-2">
@@ -180,8 +180,8 @@ export default function ScanInterface() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: Shield, title: '12 Scan Modules', desc: 'DNS, ports, tech, SSL, headers, subdomains, credentials, social OSINT, threat intel, African threats, forum monitoring, active scanning.' },
-              { icon: Zap, title: '9 AI Models', desc: 'Multi-model fusion across Groq, OpenRouter, HuggingFace, and Ollama.' },
+              { icon: Shield, title: '11 Scan Modules', desc: 'DNS, ports, tech, SSL, headers, subdomains, credentials, social OSINT, threat intel, African threats, forum monitoring.' },
+              { icon: Zap, title: 'Multi-Model AI', desc: 'AI fusion across Groq, OpenRouter, HuggingFace, and Ollama for maximum coverage.' },
               { icon: Target, title: 'African Threat Intel', desc: 'SIM-swap, mobile money API abuse, USSD hijacking, BEC patterns.' },
             ].map(({ icon: I, title, desc }) => (
               <div key={title} className="p-6 bg-slate-800/30 border border-slate-700/50 rounded-2xl hover:border-cyan-500/30 transition-all">

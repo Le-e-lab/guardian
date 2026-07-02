@@ -2,7 +2,7 @@
 
 **Africa-First AI-Native Offensive Cyber Validation Platform**
 
-> Built for Africa, by Africa. Detect, validate, and mitigate region-specific cyber threats without relying on high-cost, foreign cloud-dependent security infrastructure.
+> Built for Africa, by Africa. AI-native offensive cyber validation that detects, validates, and mitigates region-specific cyber threats — EcoCash fraud, USSD hijacking, SIM swaps, BEC — without the $35K+/yr price tag of Western tools.
 
 ## 🚀 Quick Start
 
@@ -70,8 +70,9 @@
 │                    └─────────┘                               │
 │                                                             │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │              SCANNING ENGINE (Python)                 │  │
+│  │              SCANNING ENGINE (Node.js)                 │  │
 │  │  DNS → Subdomains → Ports → Tech → SSL → Headers     │  │
+│  │  → Credentials → OSINT → Threat Intel → African Intel │  │
 │  └──────────────────────────────────────────────────────┘  │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -84,36 +85,43 @@
 | Frontend | Next.js 14, Tailwind CSS | Free (Vercel) |
 | Database | Supabase (PostgreSQL) | Free (500MB) |
 | Auth | Supabase Auth | Free (50K MAU) |
-| AI | Groq Cloud (Llama 3.1 8B) | Free (30K tok/min) |
+| AI | Multi-model: Groq, OpenRouter, HuggingFace, Ollama | Free / Low-cost |
 | Scanning | Open-source tools | Free |
 
 **Total Monthly Cost: $0** (free tier limits apply)
 
 ## 📊 Features
 
-### MVP (Current)
+### Completed
 - ✅ Domain input & scan trigger
-- ✅ Passive recon engine (DNS, ports, tech, SSL, headers, subdomains)
-- ✅ AI-powered threat analysis
+- ✅ 11 parallel scan modules (DNS, ports, tech, SSL, headers, subdomains, credentials, social OSINT, threat intel, African threats, forum monitoring)
+- ✅ Multi-provider AI attack path reasoning
 - ✅ Risk scoring (0-100)
 - ✅ Vulnerability display with severity
 - ✅ Remediation recommendations
 - ✅ Real-time scan progress
+- ✅ PDF report generation
+- ✅ Credential leak detection (XposedOrNot)
+- ✅ Social media OSINT (8 platforms)
+- ✅ African threat intelligence
+- ✅ Scan history & trends
+- ✅ Email alerts
+- ✅ Multi-user organization support
+- ✅ Compliance templates (POPIA, NDPA, Kenya DPA, GDPR, ISO 27001)
+- ✅ Auth (Supabase magic link)
+- ✅ Active validation mode (with authorization token)
 
-### Coming Soon
-- 📋 PDF report generation
-- 🔍 Leaked credential check
-- 📱 Social media footprint
-- 📈 Scan history & trends
-- 🔔 Email alerts
-- 🏢 Multi-tenant organization support
-- 🔐 Active validation mode (with authorization)
+### Roadmap
+- 🔄 Continuous monitoring (Enterprise tier)
+- 🔄 Custom scan profiles
+- 🔄 REST API for MSSP integration
+- 🔄 White-label support
 
 ## 🎯 Target Customers
 
 | Segment | Price | Features |
 |---------|-------|----------|
-| Free | $0/mo | 3 scans, basic recon |
+| Free | $0/mo | 10 scans/day, basic recon |
 | Starter | $49/mo | 15 scans, full analysis |
 | Professional | $149/mo | 50 scans, API access |
 | Enterprise | $499/mo | Unlimited, compliance reports |
@@ -122,11 +130,12 @@
 
 Sentari is specifically designed for Africa's unique cybersecurity landscape:
 
-- **Mobile Money Security**: M-Pesa, EcoCash, Flutterwave attack patterns
+- **Mobile Money Security**: EcoCash, M-Pesa, Airtel Money attack patterns
 - **USSD Vulnerabilities**: Session hijacking, SIM-swap fraud detection
-- **Data Sovereignty**: POPIA, NDPA, Kenya DPA compliance
-- **Local Pricing**: Affordable for African SMEs
-- **Regional Intelligence**: Trained on African threat patterns
+- **BEC & Invoice Fraud**: Business Email Compromise targeting African companies
+- **Data Sovereignty**: Zimbabwe Data Protection Act, POPIA, NDPA, Kenya DPA compliance
+- **Local Pricing**: $49/mo vs $35K+/yr for Western tools
+- **Regional Intelligence**: 11 scan modules trained on African threat patterns
 
 ## 📝 License
 

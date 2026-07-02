@@ -1,80 +1,334 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #06080d;
-  --color-foreground: #f8fafc;
+  --color-brand-50: #FAF7F2;
+  --color-brand-100: #F5EFE6;
+  --color-brand-200: #EADECD;
+  --color-brand-300: #D4C4A8;
+  --color-brand-400: #BFA882;
+  --color-brand-500: #A88C74;
+  --color-brand-600: #8B7355;
+  --color-brand-700: #6B5A42;
+  --color-brand-800: #4A3D2E;
+  --color-brand-900: #2A221A;
+
+  --color-surface: #FDFBF7;
+  --color-surface-alt: #F5EFE6;
+  --color-surface-raised: #FFFFFF;
+
+  --color-dark-bg: #0F0E0C;
+  --color-dark-surface: #1A1814;
+  --color-dark-border: #2A2720;
+  --color-dark-text: #F5EFE6;
+
+  --color-sev-critical: #DC2626;
+  --color-sev-high: #EA580C;
+  --color-sev-medium: #D97706;
+  --color-sev-low: #2563EB;
+  --color-sev-info: #6B7280;
+
+  --font-display: 'Funnel Display', serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
 }
 
-:root {
-  color-scheme: dark;
+/* ========== ANIMATIONS ========== */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideFromRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(168, 140, 116, 0.2); }
+  50% { border-color: rgba(168, 140, 116, 0.5); }
+}
+
+/* ========== UTILITY CLASSES ========== */
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slide-in {
+  animation: slideInRight 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.4s ease-out forwards;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+.animate-slide-from-right {
+  animation: slideFromRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+.animate-border-glow {
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+/* Staggered children */
+.stagger > * {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 100ms; }
+.stagger > *:nth-child(3) { animation-delay: 200ms; }
+.stagger > *:nth-child(4) { animation-delay: 300ms; }
+.stagger > *:nth-child(5) { animation-delay: 400ms; }
+.stagger > *:nth-child(6) { animation-delay: 500ms; }
+
+/* ========== SCROLL REVEAL ========== */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal-left.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reveal-right {
+  opacity: 0;
+  transform: translateX(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal-right.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ========== SELECTION ========== */
+
+::selection {
+  background: rgba(168, 140, 116, 0.3);
+}
+
+/* ========== SCROLLBAR ========== */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D4C4A8; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #A88C74; }
+
+/* ========== FOCUS ========== */
+
+*:focus-visible {
+  outline: 2px solid #A88C74;
+  outline-offset: 2px;
+}
+
+/* ========== BASE STYLES ========== */
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+  background: #FDFBF7;
+  color: #1A1A1A;
   font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Subtle grain texture */
+/* Subtle paper grain texture */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.015;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   z-index: 9999;
 }
 
-/* Selection color */
-::selection {
-  background: rgba(6, 182, 212, 0.3);
+/* Dark scrollbar for scanner pages */
+.dark ::-webkit-scrollbar-thumb { background: #2A2720; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #A88C74; }
+
+/* ========== TAB INDICATOR ========== */
+
+.tab-indicator {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #334155; }
+/* ========== BUTTON HOVER EFFECTS ========== */
 
-/* Focus styles */
-*:focus-visible {
-  outline: 2px solid #06b6d4;
-  outline-offset: 2px;
+.btn-brand {
+  transition: all 0.2s ease;
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+.btn-brand:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 140, 116, 0.3);
 }
 
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+.btn-brand:active {
+  transform: translateY(0) scale(0.98);
 }
 
-.animate-in {
-  animation: fadeIn 0.3s ease-out forwards;
+/* ========== CARD HOVER ========== */
+
+.card-hover {
+  transition: all 0.3s ease;
 }
 
-.slide-in-from-top-2 {
-  animation: slideIn 0.2s ease-out forwards;
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(168, 140, 116, 0.12);
 }
 
-.slide-in-from-bottom-4 {
-  animation: fadeIn 0.4s ease-out forwards;
+/* ========== CODE BLOCK STYLING ========== */
+
+.code-inline {
+  font-family: 'IBM Plex Mono', monospace;
+  background: rgba(168, 140, 116, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.875em;
 }
 
-/* Pulse for live indicators */
-@keyframes pulse-cyan {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+/* ========== GRADIENT TEXT ========== */
+
+.gradient-text {
+  background: linear-gradient(135deg, #A88C74, #6B5A42);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.animate-pulse-cyan {
-  animation: pulse-cyan 2s ease-in-out infinite;
+/* ========== SMOOTH SCROLL ========== */
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+/* ========== REFINED CARD DEPTH ========== */
+
+.card-depth {
+  box-shadow: 0 1px 3px rgba(168, 140, 116, 0.06), 0 4px 12px rgba(168, 140, 116, 0.04);
+}
+
+.card-depth:hover {
+  box-shadow: 0 4px 12px rgba(168, 140, 116, 0.1), 0 12px 32px rgba(168, 140, 116, 0.08);
+}
+
+/* ========== LINK UNDERLINE EFFECT ========== */
+
+.link-underline {
+  position: relative;
+}
+
+.link-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: #A88C74;
+  transition: width 0.3s ease;
+}
+
+.link-underline:hover::after {
+  width: 100%;
+}
+
+/* ========== REDUCED MOTION ========== */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto; }
 }

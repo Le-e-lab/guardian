@@ -19,6 +19,16 @@ export interface GuardrailConfig {
   canAccessRawOutput: boolean;
   requiresAuthorization: boolean;
   auditLogging: boolean;
+  // Result visibility controls — the upgrade gate
+  resultVisibility: {
+    showRiskScore: boolean;
+    showFindingsCount: boolean;
+    showFindingDetails: boolean;
+    showRemediation: boolean;
+    showAIAnalysis: boolean;
+    showAttackPaths: boolean;
+    maxFindingPreviews: number; // 0 = none, N = show first N findings only
+  };
 }
 
 /**
@@ -37,6 +47,15 @@ export const GUARDRAIL_CONFIGS: Record<UserRole, GuardrailConfig> = {
     canAccessRawOutput: false,
     requiresAuthorization: false,
     auditLogging: true,
+    resultVisibility: {
+      showRiskScore: true,
+      showFindingsCount: true,
+      showFindingDetails: false,
+      showRemediation: false,
+      showAIAnalysis: false,
+      showAttackPaths: false,
+      maxFindingPreviews: 0,
+    },
   },
   free: {
     role: 'free',
@@ -50,6 +69,15 @@ export const GUARDRAIL_CONFIGS: Record<UserRole, GuardrailConfig> = {
     canAccessRawOutput: false,
     requiresAuthorization: false,
     auditLogging: true,
+    resultVisibility: {
+      showRiskScore: true,
+      showFindingsCount: true,
+      showFindingDetails: false,   // LOCKED — upgrade to see details
+      showRemediation: false,       // LOCKED — upgrade to see fixes
+      showAIAnalysis: false,        // LOCKED — upgrade to see AI reasoning
+      showAttackPaths: false,       // LOCKED — upgrade to see attack paths
+      maxFindingPreviews: 3,        // Show top 3 findings as teaser
+    },
   },
   starter: {
     role: 'starter',
@@ -63,6 +91,15 @@ export const GUARDRAIL_CONFIGS: Record<UserRole, GuardrailConfig> = {
     canAccessRawOutput: false,
     requiresAuthorization: false,
     auditLogging: true,
+    resultVisibility: {
+      showRiskScore: true,
+      showFindingsCount: true,
+      showFindingDetails: true,
+      showRemediation: true,
+      showAIAnalysis: true,
+      showAttackPaths: false,
+      maxFindingPreviews: -1, // all
+    },
   },
   professional: {
     role: 'professional',
@@ -76,19 +113,37 @@ export const GUARDRAIL_CONFIGS: Record<UserRole, GuardrailConfig> = {
     canAccessRawOutput: true,
     requiresAuthorization: false,
     auditLogging: true,
+    resultVisibility: {
+      showRiskScore: true,
+      showFindingsCount: true,
+      showFindingDetails: true,
+      showRemediation: true,
+      showAIAnalysis: true,
+      showAttackPaths: true,
+      maxFindingPreviews: -1,
+    },
   },
   enterprise: {
     role: 'enterprise',
     scanMode: 'active',
     allowedModules: ['dns', 'ports', 'tech', 'ssl', 'headers', 'subdomains', 'credentials', 'social', 'active'],
     blockedModules: [],
-    maxScanTargets: -1, // unlimited
-    maxScansPerDay: -1, // unlimited
+    maxScanTargets: -1,
+    maxScansPerDay: -1,
     dataRetentionDays: 365,
     canExportData: true,
     canAccessRawOutput: true,
     requiresAuthorization: true,
     auditLogging: true,
+    resultVisibility: {
+      showRiskScore: true,
+      showFindingsCount: true,
+      showFindingDetails: true,
+      showRemediation: true,
+      showAIAnalysis: true,
+      showAttackPaths: true,
+      maxFindingPreviews: -1,
+    },
   },
   admin: {
     role: 'admin',
@@ -102,6 +157,15 @@ export const GUARDRAIL_CONFIGS: Record<UserRole, GuardrailConfig> = {
     canAccessRawOutput: true,
     requiresAuthorization: false,
     auditLogging: true,
+    resultVisibility: {
+      showRiskScore: true,
+      showFindingsCount: true,
+      showFindingDetails: true,
+      showRemediation: true,
+      showAIAnalysis: true,
+      showAttackPaths: true,
+      maxFindingPreviews: -1,
+    },
   },
 };
 
@@ -165,6 +229,29 @@ export function isActiveScanningAllowed(role: UserRole): boolean {
  */
 export function getDataRetentionDays(role: UserRole): number {
   return GUARDRAIL_CONFIGS[role].dataRetentionDays;
+}
+
+/**
+ * Get result visibility config for a role
+ */
+export function getResultVisibility(role: UserRole) {
+  return GUARDRAIL_CONFIGS[role].resultVisibility;
+}
+
+/**
+ * Check if a role has access to a specific result feature
+ */
+export function canAccessFeature(role: UserRole, feature: 'findingDetails' | 'remediation' | 'aiAnalysis' | 'attackPaths' | 'rawOutput' | 'export'): boolean {
+  const vis = GUARDRAIL_CONFIGS[role].resultVisibility;
+  switch (feature) {
+    case 'findingDetails': return vis.showFindingDetails;
+    case 'remediation': return vis.showRemediation;
+    case 'aiAnalysis': return vis.showAIAnalysis;
+    case 'attackPaths': return vis.showAttackPaths;
+    case 'rawOutput': return GUARDRAIL_CONFIGS[role].canAccessRawOutput;
+    case 'export': return GUARDRAIL_CONFIGS[role].canExportData;
+    default: return false;
+  }
 }
 
 /**

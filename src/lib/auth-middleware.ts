@@ -1,6 +1,7 @@
 /**
- * SENTARI Auth Middleware
+ * SENTARI Auth Middleware v2
  * Protects API endpoints with Supabase Auth
+ * Updated: 2026-07-02 — Added super admin support, subscription tier checks
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,6 +11,8 @@ export interface AuthUser {
   id: string;
   email: string;
   role: string;
+  subscriptionTier: string;
+  isSuperAdmin: boolean;
   orgId: string | null;
 }
 
@@ -41,17 +44,19 @@ export async function getAuthUser(request: NextRequest): Promise<AuthUser | null
 
     if (error || !user) return null;
 
-    // Get profile with role
+    // Get profile with role and subscription info
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('role, org_id')
+      .select('role, org_id, subscription_tier, is_super_admin')
       .eq('id', user.id)
       .single();
 
     return {
       id: user.id,
       email: user.email || '',
-      role: profile?.role || 'analyst',
+      role: profile?.role || 'free',
+      subscriptionTier: profile?.subscription_tier || 'free',
+      isSuperAdmin: profile?.is_super_admin || false,
       orgId: profile?.org_id || null,
     };
   } catch (error) {
@@ -92,6 +97,11 @@ export async function requireRole(
   const authResult = await requireAuth(request);
   if (authResult.error) return authResult;
 
+  // Super admins bypass role checks
+  if (authResult.user.isSuperAdmin) {
+    return { user: authResult.user };
+  }
+
   if (!allowedRoles.includes(authResult.user.role)) {
     return {
       error: NextResponse.json(
@@ -105,13 +115,39 @@ export async function requireRole(
 }
 
 /**
- * Check if user has active subscription
+ * Require super admin access
  */
-export async function checkSubscription(userId: string): Promise<{
+export async function requireSuperAdmin(request: NextRequest): Promise<
+  { user: AuthUser; error?: never } | { user?: never; error: NextResponse }
+> {
+  const authResult = await requireAuth(request);
+  if (authResult.error) return authResult;
+
+  if (!authResult.user.isSuperAdmin) {
+    return {
+      error: NextResponse.json(
+        { error: 'Access denied. Super admin privileges required.' },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return { user: authResult.user };
+}
+
+/**
+ * Check if user has active subscription (or is super admin)
+ */
+export async function checkSubscription(userId: string, isSuperAdmin: boolean = false): Promise<{
   active: boolean;
   plan: string;
   scansRemaining: number;
 }> {
+  // Super admins have unlimited access
+  if (isSuperAdmin) {
+    return { active: true, plan: 'enterprise', scansRemaining: -1 };
+  }
+
   try {
     const { data: sub } = await supabaseAdmin
       .from('subscriptions')
@@ -121,7 +157,7 @@ export async function checkSubscription(userId: string): Promise<{
       .single();
 
     if (!sub) {
-      return { active: false, plan: 'free', scansRemaining: 3 };
+      return { active: false, plan: 'free', scansRemaining: 10 };
     }
 
     return {
@@ -130,6 +166,20 @@ export async function checkSubscription(userId: string): Promise<{
       scansRemaining: sub.scans_remaining || 0,
     };
   } catch {
-    return { active: false, plan: 'free', scansRemaining: 3 };
+    return { active: false, plan: 'free', scansRemaining: 10 };
+  }
+}
+
+/**
+ * Update last sign-in timestamp
+ */
+export async function updateLastSignIn(userId: string): Promise<void> {
+  try {
+    await supabaseAdmin
+      .from('profiles')
+      .update({ last_sign_in_at: new Date().toISOString() })
+      .eq('id', userId);
+  } catch {
+    // Non-critical, swallow error
   }
 }

@@ -32,7 +32,7 @@ Africa faces 3,153 cyberattacks per week — 60% above the global average. The t
 ### The Solution
 **Sentari** is an AI-powered offensive security validation platform that:
 - Scans domains for vulnerabilities using open-source tools
-- Analyzes findings with AI (Llama 3.1 8B via Groq)
+- Analyzes findings with multi-provider AI (Groq, OpenRouter, HuggingFace, Ollama)
 - Checks for credential leaks and social media exposure
 - Generates risk scores and remediation guidance
 - Costs $0/mo to run (free tier stack)
@@ -50,8 +50,8 @@ Africa faces 3,153 cyberattacks per week — 60% above the global average. The t
 ### Core Application
 | Component | Status | Description |
 |-----------|--------|-------------|
-| **Scanning Engine** | ✅ Live | 8-module parallel scanner (DNS, ports, tech, SSL, headers, subdomains, credentials, social OSINT) |
-| **AI Analysis** | ✅ Live | Groq API integration with Llama 3.1 8B for threat analysis |
+| **Scanning Engine** | ✅ Live | 11-module parallel scanner (DNS, ports, tech, SSL, headers, subdomains, credentials, social OSINT, threat intel, African threats, forum monitoring) |
+| **AI Analysis** | ✅ Live | Multi-provider AI (Groq, OpenRouter, HuggingFace, Ollama) for threat analysis |
 | **Dashboard** | ✅ Live | Dark-themed UI with risk scoring, findings display, scan history |
 | **Database** | ✅ Live | Supabase PostgreSQL with 9 tables and RLS policies |
 | **API** | ✅ Live | RESTful endpoints for scanning, reports, history |
@@ -127,9 +127,10 @@ Africa faces 3,153 cyberattacks per week — 60% above the global average. The t
 │                    └─────────┘                               │
 │                                                             │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │              SCANNING ENGINE (8 modules)              │  │
+│  │              SCANNING ENGINE (11 modules)              │  │
 │  │  DNS → Ports → Tech → SSL → Headers → Subdomains →   │  │
-│  │  Credentials → Social OSINT                          │  │
+│  │  Credentials → Social OSINT → Threat Intel →          │  │
+│  │  African Threats → Forum Monitoring                    │  │
 │  └──────────────────────────────────────────────────────┘  │
 │                                                             │
 │  ┌──────────────────────────────────────────────────────┐  │
@@ -149,7 +150,7 @@ Africa faces 3,153 cyberattacks per week — 60% above the global average. The t
 | Feature | Status | Module | Notes |
 |---------|--------|--------|-------|
 | Domain input & scan trigger | ✅ | Frontend | Clean UI with validation |
-| Passive recon engine | ✅ | Scanner | 8 parallel modules |
+| Passive recon engine | ✅ | Scanner | 11 parallel modules |
 | DNS enumeration | ✅ | Scanner | Google DNS API |
 | Port scanning | ✅ | Scanner | Top 10 common ports |
 | Technology detection | ✅ | Scanner | HTTP header analysis |
@@ -159,7 +160,7 @@ Africa faces 3,153 cyberattacks per week — 60% above the global average. The t
 | Credential leak check | ✅ | Credentials | XposedOrNot API (free) |
 | GitHub secret scanning | ✅ | Credentials | Exposed API keys detection |
 | Social media OSINT | ✅ | Social | 8 platforms (Twitter, LinkedIn, FB, etc.) |
-| AI threat analysis | ✅ | AI | Groq + Llama 3.1 8B |
+| AI threat analysis | ✅ | AI | Multi-model: Groq, OpenRouter, HuggingFace, Ollama |
 | Risk scoring (0-100) | ✅ | AI | Severity-weighted algorithm |
 | Vulnerability display | ✅ | Frontend | Category-grouped, expandable |
 | Remediation guidance | ✅ | AI | Per-finding fix recommendations |
@@ -315,7 +316,7 @@ vercel --yes --prod
 ### Target Customers
 | Segment | Price | Features | Timeline |
 |---------|-------|----------|----------|
-| **Free** | $0/mo | 3 scans, basic recon | Now |
+| **Free** | $0/mo | 10 scans/day, basic recon | Now |
 | **Starter** | $49/mo | 15 scans, full analysis | Month 2 |
 | **Professional** | $149/mo | 50 scans, API access | Month 3 |
 | **Enterprise** | $499/mo | Unlimited, compliance | Month 6 |

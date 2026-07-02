@@ -15,6 +15,7 @@ import { runEmployeeScan } from '@/lib/employee-scanner';
 import { calculateThreatLevel, generateContainmentStrategy, generateIncidentReport } from '@/lib/adaptive-defense';
 import { runActiveScan, ActiveScanConfig } from '@/lib/active-scan';
 import { requireAuth, getAuthUser } from '@/lib/auth-middleware';
+import { isOffensiveScanningEnabled, hasOffensiveAccess } from '@/lib/feature-flags';
 
 // Enhanced rate limiting with cleanup
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -152,18 +153,57 @@ export async function POST(request: NextRequest) {
       allFindings = [...allFindings, ...employeeFindings];
     }
 
-    // Active scanning (if authorized)
-    if (scanType === 'active' && authorizationToken) {
-      if (!isActiveScanningAllowed(userRole)) {
-        return NextResponse.json({ error: 'Active scanning requires professional+ role' }, { status: 403 });
+    // Active scanning (if authorized) — OFFENSIVE ACCESS GATE
+    if (scanType === 'active') {
+      // Gate 1: Check if offensive scanning feature is enabled globally
+      const offensiveEnabled = await isOffensiveScanningEnabled();
+      if (!offensiveEnabled) {
+        return NextResponse.json(
+          { error: 'Offensive testing is not currently available. Contact support for access.' },
+          { status: 403 }
+        );
       }
+
+      // Gate 2: Check if user has verified access for this specific domain
+      const { hasAccess } = await hasOffensiveAccess(user.id, cleanTarget);
+      if (!hasAccess) {
+        return NextResponse.json(
+          {
+            error: 'You need verified domain ownership to run offensive tests.',
+            details: 'Request access via /api/offensive/request to verify you own or are authorized to test this domain.',
+            verificationRequired: true,
+            targetDomain: cleanTarget,
+          },
+          { status: 403 }
+        );
+      }
+
+      // Gate 3: Check role-based permissions
+      if (!isActiveScanningAllowed(userRole)) {
+        return NextResponse.json(
+          { error: 'Active scanning requires professional+ role' },
+          { status: 403 }
+        );
+      }
+
+      // All gates passed — run active scan
       const activeConfig: ActiveScanConfig = {
-        target: cleanTarget, authorizationToken,
+        target: cleanTarget, authorizationToken: authorizationToken || 'verified',
         scope: ['sql_injection', 'xss', 'directory_traversal', 'open_redirect'],
         timeout: 60, maxConnections: 5,
       };
       const activeResults = await runActiveScan(activeConfig);
       allFindings = [...allFindings, ...activeResults.findings];
+
+      // Log offensive scan
+      await supabaseAdmin.from('offensive_scan_log').insert({
+        user_id: user.id,
+        target_domain: cleanTarget,
+        scan_type: 'active_validation',
+        findings_count: activeResults.findings.length,
+        status: 'completed',
+        ip_address: clientIp,
+      });
     }
 
     // Store results
@@ -212,9 +252,39 @@ export async function POST(request: NextRequest) {
 
     const threatLevel = calculateThreatLevel(allFindings);
 
-    return NextResponse.json({
+    // Build full response first
+    const fullFindings = allFindings.map(f => ({
+      title: f.title,
+      severity: f.severity,
+      category: f.category,
+      evidence: f.evidence as Record<string, unknown>,
+      remediation: f.remediation,
+    }));
+
+    // Apply role-based result visibility (the upgrade gate)
+    const vis = guardrailConfig.resultVisibility;
+    
+    // Filter findings based on visibility
+    let visibleFindings = fullFindings;
+    if (!vis.showFindingDetails) {
+      // Free/public: show only titles + severity, no details
+      visibleFindings = fullFindings.map(f => ({
+        title: f.title,
+        severity: f.severity,
+        category: f.category,
+        evidence: {} as Record<string, unknown>,  // LOCKED
+        remediation: '',                           // LOCKED
+      }));
+    }
+    if (vis.maxFindingPreviews > 0) {
+      visibleFindings = visibleFindings.slice(0, vis.maxFindingPreviews);
+    }
+
+    // Build tier-gated response
+    const response: Record<string, unknown> = {
       id: scanTarget.id, target: cleanTarget, mode, scanType, status: 'completed',
-      userRole, guardrails: {
+      userRole, tier: userRole,
+      guardrails: {
         allowedModules: guardrailConfig.allowedModules,
         dataRetentionDays: guardrailConfig.dataRetentionDays,
       },
@@ -222,7 +292,7 @@ export async function POST(request: NextRequest) {
         threatLevel: threatLevel.level, threatScore: threatLevel.score,
         responseTime: threatLevel.responseTime, immediateActions: threatLevel.actions,
       },
-      scan_time_ms: scanResults.reduce((acc, r) => acc + r.duration_ms, 0),
+      scan_time_ms: scanResults.reduce((acc, r) => r.duration_ms + acc, 0),
       tools_run: scanResults.map(r => r.tool),
       findings: {
         total: allFindings.length,
@@ -232,19 +302,33 @@ export async function POST(request: NextRequest) {
         low: allFindings.filter(f => f.severity === 'low').length,
         info: allFindings.filter(f => f.severity === 'info').length,
       },
-      risk_score: analysis.overall_score,
+      risk_score: vis.showRiskScore ? analysis.overall_score : null,
       risk_summary: analysis.risk_summary,
-      ai_analysis: analysis.analysis,
-      tokens_used: analysis.tokens_used,
-      scan_details: scanResults,
-      details: allFindings,
+      details: visibleFindings,
       created_at: scanTarget.created_at,
+      upgrade_gated: !vis.showAIAnalysis || !vis.showFindingDetails || !vis.showAttackPaths,
       disclaimers: [
         'This assessment is for authorized security testing only.',
         'Unauthorized scanning is illegal.',
         'Findings should be used for defensive purposes only.',
       ],
-    });
+    };
+
+    // Only include AI analysis for paid tiers
+    if (vis.showAIAnalysis) {
+      response.ai_analysis = analysis.analysis;
+      response.tokens_used = analysis.tokens_used;
+    } else {
+      response.ai_analysis = 'AI analysis available on Starter plan and above. Upgrade to see detailed threat reasoning and attack path analysis.';
+      response.upgrade_prompt = 'Unlock AI-powered attack path analysis, detailed remediation steps, and full vulnerability reports.';
+    }
+
+    // Only include raw scan details for professional+
+    if (vis.showAttackPaths) {
+      response.scan_details = scanResults;
+    }
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('[API] Scan failed:', error);
     return NextResponse.json({ error: 'An error occurred. Please try again.' }, { status: 500 });
@@ -262,15 +346,20 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Only show user's own scans
-    const { data: scans, error } = await supabaseAdmin
+    // Super admins see all scans; regular users see only their own
+    let query = supabaseAdmin
       .from('scan_targets')
-      .select(`id, target_url, status, scan_mode, created_at,
+      .select(`id, target_url, status, scan_mode, created_at, created_by,
         ai_analysis (overall_score, risk_summary),
         vulnerabilities (severity)`)
-      .eq('created_by', user.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
+
+    if (!user.isSuperAdmin) {
+      query = query.eq('created_by', user.id);
+    }
+
+    const { data: scans, error } = await query;
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
