@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    const { scanId } = await request.json();
+    const { scanId, format = 'html' } = await request.json();
 
     if (!scanId) {
       return NextResponse.json({ error: 'Scan ID required' }, { status: 400 });
@@ -29,15 +29,19 @@ export async function POST(request: NextRequest) {
     const vulns = target.vulnerabilities || [];
 
     // Generate HTML report
-    const html = generateReportHTML(target, vulns, analysis);
+    const html = generateReportHTML(target, vulns, analysis, format === 'pdf');
 
-    // Store the report URL (in production, you'd upload to R2/S3)
-    const reportUrl = `/api/report/${scanId}/html`;
+    const contentType = format === 'pdf' 
+      ? 'text/html'  // Browser will handle PDF via print
+      : 'text/html';
+    const disposition = format === 'pdf'
+      ? `inline; filename="sentari-report-${target.target_url}-${Date.now()}.html"`
+      : `inline; filename="sentari-report-${target.target_url}-${Date.now()}.html"`;
 
     return new NextResponse(html, {
       headers: {
-        'Content-Type': 'text/html',
-        'Content-Disposition': `inline; filename="sentari-report-${target.target_url}-${Date.now()}.html"`,
+        'Content-Type': contentType,
+        'Content-Disposition': disposition,
       },
     });
   } catch (error) {
@@ -45,7 +49,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function generateReportHTML(target: Record<string, unknown>, vulns: Record<string, unknown>[], analysis: Record<string, unknown> | null): string {
+function generateReportHTML(target: Record<string, unknown>, vulns: Record<string, unknown>[], analysis: Record<string, unknown> | null, printMode: boolean = false): string {
   const score = (analysis?.overall_score as number) || 0;
   const scoreColor = score >= 80 ? '#10B981' : score >= 60 ? '#F59E0B' : score >= 40 ? '#F97316' : '#EF4444';
   
@@ -99,14 +103,31 @@ function generateReportHTML(target: Record<string, unknown>, vulns: Record<strin
     .vuln-remediation { color: #9CA3AF; font-size: 14px; margin-top: 8px; }
     .summary-text { color: #D1D5DB; line-height: 1.8; }
     .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #1F2937; color: #6B7280; font-size: 12px; }
-    @media print { body { background: white; color: #111; } .section { border: 1px solid #ddd; } }
+    @media print { 
+      body { background: white; color: #111; } 
+      .section { border: 1px solid #ddd; background: white; }
+      .score-card { background: white; border: 1px solid #ddd; }
+      .finding-count { background: #f5f5f5; }
+      .vuln-item { background: #f5f5f5; }
+      .no-print { display: none !important; }
+    }
+    .pdf-btn { 
+      position: fixed; top: 20px; right: 20px; 
+      background: #06B6D4; color: white; 
+      padding: 10px 20px; border-radius: 8px; 
+      border: none; cursor: pointer; font-weight: 600;
+      box-shadow: 0 4px 12px rgba(6,182,212,0.3);
+      z-index: 1000;
+    }
+    .pdf-btn:hover { background: #0891B2; }
   </style>
 </head>
 <body>
+  <button class="pdf-btn no-print" onclick="window.print()">📥 Download PDF</button>
   <div class="container">
     <div class="header">
       <div class="logo">SENTARI</div>
-      <div class="subtitle">Africa-First AI-Native Threat Intelligence</div>
+      <div class="subtitle">Cybersecurity Compliance for Zimbabwe</div>
     </div>
 
     <div class="score-card">
@@ -175,7 +196,7 @@ function generateReportHTML(target: Record<string, unknown>, vulns: Record<strin
     </div>
 
     <div class="footer">
-      <p>SENTARI — Africa-First AI-Native Threat Intelligence</p>
+      <p>SENTARI — Cybersecurity Compliance for Zimbabwe</p>
       <p>Generated ${new Date().toISOString()} • This report is confidential</p>
     </div>
   </div>

@@ -16,9 +16,9 @@ const ibmPlexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'SENTARI — POPIA Compliance Scanner for South Africa',
-  description: 'AI-powered POPIA compliance scanning for South Africa. Automated assessments, audit-ready reports, and remediation guidance. Data sovereign. From $49/mo.',
-  keywords: ['POPIA', 'data protection', 'compliance', 'South Africa', 'Information Regulator', 'GDPR', 'NDPA', 'Kenya DPA', 'AI compliance', 'audit-ready'],
+  title: 'SENTARI — Cybersecurity Compliance for Zimbabwe',
+  description: 'AI-powered cybersecurity compliance scanning for Zimbabwe. Automated assessments, audit-ready reports, and remediation guidance. Data sovereign. From $49/mo.',
+  keywords: ['cybersecurity', 'Zimbabwe', 'compliance', 'data protection', 'POPIA', 'EcoCash', 'Harare', 'AI security', 'audit-ready', 'vulnerability scanning'],
 };
 
 export default function RootLayout({

@@ -68,13 +68,13 @@ export default function LandingPage() {
         <div className="absolute top-20 right-1/4 w-[300px] h-[300px] bg-brand-300/20 rounded-full blur-[80px] animate-float" />
         <div className="relative z-10 max-w-4xl mx-auto px-6 pt-20 sm:pt-24 pb-16 sm:pb-20 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-100 border border-brand-200 text-brand-600 text-xs font-medium mb-8 animate-fade-in-up">
-            <MapPin className="w-3.5 h-3.5" /> Built in Harare. Built for Africa.
+            <MapPin className="w-3.5 h-3.5" /> Built in Harare. Built for Zimbabwe.
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.1] mb-6 font-[family-name:var(--font-display)] animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-            POPIA compliance<br /><span className="gradient-text">in under 60 seconds.</span>
+            Cybersecurity compliance<br /><span className="gradient-text">for Zimbabwean businesses.</span>
           </h1>
           <p className="text-lg sm:text-xl text-brand-600 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-            AI-powered compliance scanning for South Africa&apos;s Protection of Personal Information Act. Automated assessments, audit-ready reports, and remediation guidance — all data sovereign.
+            AI-powered compliance scanning for Zimbabwe&apos;s data protection regulations. Automated assessments, audit-ready reports, and remediation guidance — all data sovereign.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
             <button onClick={handleCTA} className="px-8 py-4 bg-brand-500 hover:bg-brand-600 rounded-full font-semibold text-white transition-all inline-flex items-center gap-2 shadow-lg shadow-brand-500/20 btn-brand">
@@ -96,10 +96,10 @@ export default function LandingPage() {
       <section className="border-y border-brand-200/50 bg-brand-100/30">
         <div className="max-w-6xl mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           {[
-            { value: '62%', label: 'SA orgs lack a DPO', icon: Building2 },
+            { value: '70%+', label: 'ZW firms lack basic cybersecurity', icon: Building2 },
             { value: '<60s', label: 'Full compliance scan', icon: Zap },
-            { value: '$49', label: 'POPIA compliance, per month', icon: CreditCard },
-            { value: '72hr', label: 'Breach notification window', icon: AlertTriangle },
+            { value: '$49', label: 'Enterprise security, per month', icon: CreditCard },
+            { value: 'R5bn+', label: 'Lost to cybercrime in SA alone', icon: AlertTriangle },
           ].map(({ value, label, icon: Icon }) => (
             <div key={label} className="text-center group">
               <Icon className="w-5 h-5 text-brand-400 mx-auto mb-2 group-hover:text-brand-500 transition-colors" />
@@ -121,7 +121,7 @@ export default function LandingPage() {
           <div className="relative inline-flex bg-brand-100 rounded-full p-1">
             <div className="absolute top-1 bottom-1 bg-brand-500 rounded-full transition-all duration-300 ease-out"
               style={{ left: indicatorStyle.left, width: indicatorStyle.width }} />
-            {['POPIA Compliance', 'Why Africa'].map((label, i) => (
+            {['Zimbabwe First', 'Africa Compliance'].map((label, i) => (
               <button key={label} ref={(el) => { tabRefs.current[i] = el; }} onClick={() => setActiveTab(i)}
                 className={`relative z-10 px-6 py-2.5 rounded-full text-sm font-medium transition-colors duration-300 ${activeTab === i ? 'text-white' : 'text-brand-600 hover:text-brand-700'}`}>
                 {label}
@@ -131,7 +131,7 @@ export default function LandingPage() {
         </div>
 
         <div className="animate-fade-in" key={activeTab}>
-          {activeTab === 0 ? <POPIATab /> : <AfricaTab />}
+          {activeTab === 0 ? <ZimbabweTab /> : <AfricaTab />}
         </div>
       </section>
 
@@ -162,7 +162,7 @@ export default function LandingPage() {
             <Shield className="w-6 h-6 text-brand-500" />
           </div>
           <blockquote className="text-xl sm:text-2xl font-[family-name:var(--font-display)] text-brand-800 leading-relaxed mb-6">
-            &ldquo;South African businesses deserve to know where they stand on POPIA — before the Information Regulator does.&rdquo;
+            &ldquo;Zimbabwe&apos;s businesses deserve to know where they stand — before an attacker does. We&apos;re building the shield.&rdquo;
           </blockquote>
           <p className="text-brand-500 text-sm font-medium uppercase tracking-widest">Sentari Mission Statement</p>
         </div>
@@ -171,13 +171,16 @@ export default function LandingPage() {
       {/* ==================== CTA ==================== */}
       <section className="py-20 sm:py-24">
         <div className="max-w-4xl mx-auto px-6 text-center reveal">
-          <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-display)] mb-6">Ready to check your POPIA compliance?</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-display)] mb-6">Ready to check your cybersecurity posture?</h2>
           <p className="text-brand-600 text-lg mb-8 max-w-2xl mx-auto">Start with a free compliance assessment. See your score in under 60 seconds. Upgrade for full audit-ready reports.</p>
           <button onClick={handleCTA} className="px-8 py-4 bg-brand-500 hover:bg-brand-600 rounded-full font-semibold text-white transition-all inline-flex items-center gap-2 shadow-lg shadow-brand-500/20 btn-brand text-lg">
             Start Free Assessment <ArrowRight className="w-5 h-5" />
           </button>
         </div>
       </section>
+
+      {/* ==================== WAITLIST ==================== */}
+      <WaitlistSection />
 
       <Footer />
       {showSignIn && <SignInModal onClose={() => setShowSignIn(false)} />}
@@ -186,27 +189,27 @@ export default function LandingPage() {
 }
 
 /* =====================================================================
-   POPIA TAB — South Africa compliance first
+   ZIMBABWE TAB — Home market first
    ===================================================================== */
 
-function POPIATab() {
+function ZimbabweTab() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="grid md:grid-cols-5 gap-10 sm:gap-12 items-start">
         <div className="md:col-span-3">
-          <p className="text-xs text-brand-500 uppercase tracking-widest mb-3 font-medium">// POPIA Compliance</p>
+          <p className="text-xs text-brand-500 uppercase tracking-widest mb-3 font-medium">// Zimbabwe Cybersecurity</p>
           <h3 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-display)] mb-6 leading-tight">
-            South Africa&apos;s data protection law<br />made simple.
+            Zimbabwe&apos;s digital economy<br />deserves proper protection.
           </h3>
           <div className="space-y-4 text-brand-600 leading-relaxed text-sm sm:text-base">
             <p>
-              The <strong className="text-brand-800">Protection of Personal Information Act (POPIA)</strong> is South Africa&apos;s comprehensive data protection law. Every organization processing personal information of South African residents must comply.
+              <strong className="text-brand-800">EcoCash processes over 600 million transactions monthly</strong>. CBZ, Steward Bank, and NetOne are digitizing at speed. The Zimbabwe Stock Exchange is going electronic.
             </p>
             <p>
-              <strong className="text-brand-800">Non-compliance penalties are severe:</strong> Fines up to R10 million, imprisonment up to 10 years, and reputational damage that can destroy a business. The Information Regulator is actively enforcing.
+              But <strong className="text-brand-800">70%+ of Zimbabwean firms lack basic cybersecurity</strong>. The tools to protect these systems cost $35,000-$250,000 per year — more than most companies&apos; entire IT budgets.
             </p>
             <p>
-              <strong className="text-brand-800">Sentari automates POPIA compliance.</strong> Our AI-powered scanner checks your infrastructure against all 8 POPIA principles, generates audit-ready reports, and provides step-by-step remediation guidance.
+              <strong className="text-brand-800">Sentari changes the equation.</strong> Built in Harare by Elevate Value Partners, we deliver enterprise-grade compliance scanning at $49/month — because the cost of not doing it is measured in breached trust, stolen funds, and collapsed businesses.
             </p>
           </div>
           <div className="mt-8 flex items-center gap-4 p-5 bg-brand-100 rounded-xl border border-brand-200/50">
@@ -214,21 +217,20 @@ function POPIATab() {
               <Shield className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-brand-800">8 POPIA Principles Assessed</p>
-              <p className="text-sm text-brand-600">Lawful processing, purpose limitation, information quality, security safeguards, and more.</p>
+              <p className="text-sm font-semibold text-brand-800">Our founding belief</p>
+              <p className="text-sm text-brand-600">Every Zimbabwean business — from a Harare fintech to a Bulawayo manufacturer — deserves to know where it&apos;s exposed.</p>
             </div>
           </div>
         </div>
         <div className="md:col-span-2">
           <div className="bg-brand-100 rounded-2xl p-6 border border-brand-200">
-            <p className="text-xs text-brand-500 uppercase tracking-widest mb-4 font-medium">POPIA by the numbers</p>
+            <p className="text-xs text-brand-500 uppercase tracking-widest mb-4 font-medium">Zimbabwe by the numbers</p>
             <div className="space-y-3">
               {[
-                { label: 'Organizations must comply', value: '100%' },
-                { label: 'Max fine for non-compliance', value: 'R10M' },
-                { label: 'Breach notification window', value: '72 hours' },
-                { label: 'Information Officer required', value: 'Yes' },
-                { label: 'Cross-border transfer rules', value: 'Strict' },
+                { label: 'EcoCash registered accounts', value: '10M+' },
+                { label: 'Mobile money transactions/month', value: '700M+' },
+                { label: 'Organizations without a DPO', value: '62%' },
+                { label: 'Firms lacking basic cybersecurity', value: '70%+' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between py-2 border-b border-brand-200/50 last:border-0">
                   <span className="text-sm text-brand-600">{label}</span>
@@ -239,8 +241,8 @@ function POPIATab() {
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="bg-brand-100/50 rounded-xl p-4 text-center border border-brand-200/50">
-              <div className="text-xl sm:text-2xl font-bold text-sev-critical font-[family-name:var(--font-display)]">R10M+</div>
-              <div className="text-xs text-brand-600 mt-1">Non-compliance penalty</div>
+              <div className="text-xl sm:text-2xl font-bold text-sev-critical font-[family-name:var(--font-display)]">$35K+</div>
+              <div className="text-xs text-brand-600 mt-1">Min. cost of Western tools</div>
             </div>
             <div className="bg-brand-100/50 rounded-xl p-4 text-center border border-brand-200/50">
               <div className="text-xl sm:text-2xl font-bold text-brand-500 font-[family-name:var(--font-display)]">$49</div>
@@ -349,5 +351,105 @@ function AfricaTab() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* =====================================================================
+   WAITLIST SECTION — Email capture for early demand
+   ===================================================================== */
+
+function WaitlistSection() {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [company, setCompany] = useState('');
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setStatus('submitting');
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, company, country: 'Zimbabwe' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatus('success');
+        setMessage(data.alreadyExists ? data.message : 'You\'re on the list! We\'ll be in touch.');
+        setEmail('');
+        setName('');
+        setCompany('');
+      } else {
+        setStatus('error');
+        setMessage(data.error || 'Something went wrong.');
+      }
+    } catch {
+      setStatus('error');
+      setMessage('Network error. Please try again.');
+    }
+  };
+
+  return (
+    <section className="py-16 sm:py-20 bg-brand-50 border-y border-brand-200/50">
+      <div className="max-w-2xl mx-auto px-6 text-center reveal">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-500/10 border border-brand-200 text-brand-600 text-xs font-medium mb-6">
+          <Lock className="w-3.5 h-3.5" /> Early Access
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-display)] mb-4">
+          Be first to know when we launch.
+        </h2>
+        <p className="text-brand-600 mb-8 max-w-lg mx-auto">
+          Join the waitlist for early access, founding partner pricing, and priority onboarding.
+        </p>
+
+        {status === 'success' ? (
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-green-800">
+            <CheckCircle className="w-8 h-8 mx-auto mb-3 text-green-500" />
+            <p className="font-semibold">{message}</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3 max-w-md mx-auto">
+            <input
+              type="text"
+              placeholder="Your name (optional)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-white border border-brand-200 text-brand-800 placeholder:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
+            />
+            <input
+              type="text"
+              placeholder="Company (optional)"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-white border border-brand-200 text-brand-800 placeholder:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
+            />
+            <div className="flex gap-2">
+              <input
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="flex-1 px-4 py-3 rounded-xl bg-white border border-brand-200 text-brand-800 placeholder:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
+              />
+              <button
+                type="submit"
+                disabled={status === 'submitting'}
+                className="px-6 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-400 text-white rounded-xl font-semibold transition-all text-sm whitespace-nowrap"
+              >
+                {status === 'submitting' ? 'Joining...' : 'Join Waitlist'}
+              </button>
+            </div>
+            {status === 'error' && (
+              <p className="text-red-500 text-sm">{message}</p>
+            )}
+          </form>
+        )}
+      </div>
+    </section>
   );
 }
