@@ -40,23 +40,57 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'requests' | 'flags' | 'logs'>('requests');
+  const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    checkAuthAndFetch();
   }, []);
 
-  const fetchData = async () => {
+  const checkAuthAndFetch = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/offensive/admin?type=requests');
+      // Check if user is authenticated and is super admin
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        setError('Please sign in to access admin dashboard.');
+        setLoading(false);
+        return;
+      }
+
+      // Check if user is super admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_super_admin, role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!profile?.is_super_admin && profile?.role !== 'enterprise') {
+        setError('Access denied. Super admin privileges required.');
+        setLoading(false);
+        return;
+      }
+
+      setAuthorized(true);
+
+      // Fetch data
+      const res = await fetch('/api/offensive/admin?type=requests', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setRequests(data.requests || []);
       setScanStats(data.scanStats || []);
       setTotals(data.totals || { pending: 0, verified: 0, rejected: 0, totalScans: 0 });
 
-      // Fetch flags
-      const flagRes = await fetch('/api/offensive/admin?type=flags');
+      const flagRes = await fetch('/api/offensive/admin?type=flags', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
       if (flagRes.ok) {
         const flagData = await flagRes.json();
         setFlags(flagData.flags || []);
@@ -76,7 +110,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({ action: 'approve', requestId }),
       });
       if (!res.ok) throw new Error('Failed to approve');
-      fetchData();
+      checkAuthAndFetch();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to approve');
     }
@@ -90,7 +124,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({ action: 'reject', requestId, reason: 'Rejected by admin' }),
       });
       if (!res.ok) throw new Error('Failed to reject');
-      fetchData();
+      checkAuthAndFetch();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reject');
     }
@@ -104,7 +138,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({ action: 'revoke', requestId }),
       });
       if (!res.ok) throw new Error('Failed to revoke');
-      fetchData();
+      checkAuthAndFetch();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to revoke');
     }
@@ -118,7 +152,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({ action: 'toggle_feature', featureName, enabled }),
       });
       if (!res.ok) throw new Error('Failed to toggle');
-      fetchData();
+      checkAuthAndFetch();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to toggle feature');
     }

@@ -197,7 +197,23 @@ export default function ScannerPage() {
             ) : (
               <div className="space-y-2">
                 {history.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between p-3 bg-dark-bg rounded-xl border border-dark-border">
+                  <div 
+                    key={s.id} 
+                    className="flex items-center justify-between p-3 bg-dark-bg rounded-xl border border-dark-border cursor-pointer hover:border-brand-500/30 transition-colors"
+                    onClick={async () => {
+                      // Load scan details
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const r = await fetch(`/api/scan/${s.id}`, { headers: { Authorization: `Bearer ${session?.access_token}` } });
+                        if (r.ok) {
+                          const data = await r.json();
+                          setResult(data);
+                          setTarget(data.target);
+                          setShowHistory(false);
+                        }
+                      } catch {}
+                    }}
+                  >
                     <div className="flex items-center gap-4">
                       <div className={`text-2xl font-bold ${riskColor(s.risk_score || 0)}`}>{s.risk_score || '—'}</div>
                       <div>
