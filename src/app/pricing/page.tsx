@@ -12,7 +12,7 @@ const TIERS = [
     price: '$0',
     period: '/beta',
     desc: 'Full access during beta. Feedback welcome.',
-    features: ['Unlimited scans during beta', 'All scanning modules', 'Compliance reports', 'AI-powered analysis', 'PDF export', 'Priority support'],
+    features: ['3 scans per month', 'All scanning modules', 'Compliance reports', 'AI-powered analysis', 'PDF export', 'Priority support'],
     cta: 'Start Free Now',
     ctaLink: '/scan',
     highlighted: false,
