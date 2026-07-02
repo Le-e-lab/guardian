@@ -12,8 +12,9 @@ const TIERS = [
     price: '$0',
     period: '/forever',
     desc: 'See your risk score. Know you have problems.',
-    features: ['3 scans per day', 'Risk score & severity breakdown', 'Top 3 findings preview', 'No remediation steps', 'No AI analysis', 'No report export'],
-    cta: 'Start Free',
+    features: ['1 scan per 24 hours', 'Risk score & severity breakdown', 'Top 3 findings preview', 'No login required', 'No remediation steps', 'No AI analysis'],
+    cta: 'Scan Free Now',
+    ctaLink: '/scan',
     highlighted: false,
   },
   {
@@ -23,6 +24,7 @@ const TIERS = [
     desc: 'The full picture. Fix what matters.',
     features: ['15 scans per day', 'Full recon + OSINT', 'AI threat analysis', 'Remediation steps for every finding', 'PDF report export', 'EcoCash payment'],
     cta: 'Get Started',
+    ctaLink: '/scan',
     highlighted: true,
   },
   {
@@ -32,6 +34,7 @@ const TIERS = [
     desc: 'Deeper intelligence, team access.',
     features: ['50 scans per day', 'Everything in Starter', 'Attack path visualization', 'Credential leak check', 'Social media OSINT', 'REST API access'],
     cta: 'Go Professional',
+    ctaLink: '/scan',
     highlighted: false,
   },
   {
@@ -41,6 +44,7 @@ const TIERS = [
     desc: 'Active testing & compliance.',
     features: ['Unlimited scans', 'Everything in Professional', 'Active vulnerability testing', 'Continuous monitoring', 'Compliance templates (POPIA, NDPA)', 'Dedicated support & SLA'],
     cta: 'Contact Sales',
+    ctaLink: 'mailto:hello@sentari.dev',
     highlighted: false,
   },
 ];
@@ -96,7 +100,7 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="max-w-5xl mx-auto px-6 pb-16">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {TIERS.map(({ name, price, period, desc, features, cta, highlighted }) => (
+          {TIERS.map(({ name, price, period, desc, features, cta, ctaLink, highlighted }) => (
             <div key={name} className={`rounded-2xl p-6 border transition-all card-hover ${
               highlighted ? 'bg-brand-500 text-white border-brand-500 shadow-lg shadow-brand-500/20 scale-[1.02]' : 'bg-brand-100/50 border-brand-200/50 hover:border-brand-300'
             }`}>
@@ -114,11 +118,11 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <button className={`w-full py-3 rounded-full font-semibold text-sm transition-all ${
+              <a href={ctaLink} className={`block w-full py-3 rounded-full font-semibold text-sm transition-all text-center ${
                 highlighted ? 'bg-white text-brand-500 hover:bg-brand-50' : 'bg-brand-500 text-white hover:bg-brand-600'
               } btn-brand`}>
                 {cta}
-              </button>
+              </a>
             </div>
           ))}
         </div>

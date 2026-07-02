@@ -55,7 +55,7 @@ export default function LandingPage() {
     return () => observer.disconnect();
   }, []);
 
-  const handleCTA = () => user ? window.location.href = '/dashboard' : setShowSignIn(true);
+  const handleCTA = () => window.location.href = '/scan';
 
   return (
     <div className="min-h-screen bg-surface">

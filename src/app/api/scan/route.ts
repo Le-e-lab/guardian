@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runScan, ScanConfig } from '@/lib/scanner';
 import { analyzeWithAI } from '@/lib/ai';
+import { analyzeWithFallback } from '@/lib/ai-fallback';
 import { supabaseAdmin } from '@/lib/supabase';
 import { 
   GUARDRAIL_CONFIGS, 
@@ -16,6 +17,7 @@ import { calculateThreatLevel, generateContainmentStrategy, generateIncidentRepo
 import { runActiveScan, ActiveScanConfig } from '@/lib/active-scan';
 import { requireAuth, getAuthUser } from '@/lib/auth-middleware';
 import { isOffensiveScanningEnabled, hasOffensiveAccess } from '@/lib/feature-flags';
+import { detectBot, checkFreeScanLimit } from '@/lib/bot-detection';
 
 // Enhanced rate limiting with cleanup
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -77,16 +79,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Rate limit exceeded.' }, { status: 429 });
     }
 
-    // AUTH REQUIRED: Get user from session
-    const authResult = await requireAuth(request);
-    if (authResult.error) return authResult.error;
-    const user = authResult.user;
-
     const body = await request.json();
     const { target, mode = 'passive', scanType = 'standard', employeeEmails, authorizationToken } = body;
 
-    // Determine user role from database (not header)
-    const userRole: UserRole = user.role as UserRole || 'free';
+    // Bot detection
+    const botCheck = detectBot(request, body);
+    if (botCheck.isBot) {
+      console.warn(`[SECURITY] Bot detected from ${clientIp}:`, botCheck.reasons);
+      return NextResponse.json(
+        { error: 'Automated access is not permitted. Please use a web browser.' },
+        { status: 403 }
+      );
+    }
+
+    // AUTH: Try to get user, but allow 1 free scan per IP without login
+    const user = await getAuthUser(request);
+    let userRole: UserRole = 'public';
+    let userId: string | null = null;
+
+    if (user) {
+      // Authenticated user — use their role
+      userRole = (user.role as UserRole) || 'free';
+      userId = user.id;
+    } else {
+      // Anonymous user — check if they've used their 1 free scan
+      const freeCheck = checkFreeScanLimit(clientIp);
+      if (!freeCheck.allowed) {
+        return NextResponse.json(
+          { 
+            error: 'Free scan limit reached. Sign in for more scans.',
+            requiresAuth: true,
+            upgradePrompt: 'Create a free account for 10 scans per day, or upgrade to Starter for unlimited scanning.',
+          },
+          { status: 401 }
+        );
+      }
+      userRole = 'public';
+    }
+
     const guardrailConfig = GUARDRAIL_CONFIGS[userRole] || GUARDRAIL_CONFIGS.free;
 
     // Validate input
@@ -96,22 +126,24 @@ export async function POST(request: NextRequest) {
     }
     const cleanTarget = validation.clean;
 
-    // Check scan limits
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count: scansToday } = await supabaseAdmin
-      .from('scan_targets')
-      .select('*', { count: 'exact', head: true })
-      .eq('created_by', user.id)
-      .gte('created_at', twentyFourHoursAgo);
+    // Check scan limits (authenticated users only — anonymous limited by checkFreeScanLimit above)
+    if (userId) {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count: scansToday } = await supabaseAdmin
+        .from('scan_targets')
+        .select('*', { count: 'exact', head: true })
+        .eq('created_by', userId)
+        .gte('created_at', twentyFourHoursAgo);
 
-    if (scansToday !== null && hasExceededScanLimit(userRole, scansToday)) {
-      return NextResponse.json(
-        { error: `Daily limit reached (${guardrailConfig.maxScansPerDay}). Upgrade for more.` },
-        { status: 429 }
-      );
+      if (scansToday !== null && hasExceededScanLimit(userRole, scansToday)) {
+        return NextResponse.json(
+          { error: `Daily limit reached (${guardrailConfig.maxScansPerDay}). Upgrade for more.` },
+          { status: 429 }
+        );
+      }
     }
 
-    console.log(`[API] ${user.email} scanning ${cleanTarget} (${scanType})`);
+    console.log(`[API] ${user?.email || 'anonymous'} scanning ${cleanTarget} (${scanType})`);
 
     // Create scan target
     const { data: scanTarget, error: targetError } = await supabaseAdmin
@@ -121,7 +153,7 @@ export async function POST(request: NextRequest) {
         target_type: 'domain',
         scan_mode: mode,
         status: 'scanning',
-        created_by: user.id,
+        created_by: userId,
       })
       .select()
       .single();
@@ -165,7 +197,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Gate 2: Check if user has verified access for this specific domain
-      const { hasAccess } = await hasOffensiveAccess(user.id, cleanTarget);
+      const { hasAccess } = await hasOffensiveAccess(userId || '', cleanTarget);
       if (!hasAccess) {
         return NextResponse.json(
           {
@@ -197,7 +229,7 @@ export async function POST(request: NextRequest) {
 
       // Log offensive scan
       await supabaseAdmin.from('offensive_scan_log').insert({
-        user_id: user.id,
+        user_id: userId,
         target_domain: cleanTarget,
         scan_type: 'active_validation',
         findings_count: activeResults.findings.length,
@@ -245,7 +277,7 @@ export async function POST(request: NextRequest) {
       action: 'scan_completed', resource_type: 'scan_target', resource_id: scanTarget.id,
       details: { target: cleanTarget, findings_count: allFindings.length, risk_score: analysis.overall_score,
         user_role: userRole, scan_type: scanType, modules_used: modules },
-      ip_address: clientIp, user_id: user.id,
+      ip_address: clientIp, user_id: userId,
     });
 
     cleanupExpiredData().catch(err => console.error('[RETENTION]', err));
