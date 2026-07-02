@@ -338,7 +338,7 @@ export default function ScannerPage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-brand-300 leading-relaxed">{result.risk_summary}</p>
+                <ParsedAIAnalysis analysis={result.ai_analysis} summary={result.risk_summary} />
               )}
             </div>
 
@@ -438,6 +438,145 @@ export default function ScannerPage() {
       <footer className="border-t border-dark-border py-8 text-center text-xs text-brand-700">
         Sentari — Africa-First AI-Native Threat Intelligence
       </footer>
+    </div>
+  );
+}
+
+/* =====================================================================
+   PARSED AI ANALYSIS — Renders structured JSON from AI beautifully
+   ===================================================================== */
+
+interface ParsedAnalysis {
+  risk_score?: number;
+  overall_score?: number;
+  summary?: string;
+  risk_summary?: string;
+  critical_findings?: string[];
+  attack_paths?: Array<{
+    name: string;
+    description: string;
+    severity: string;
+    steps: string[];
+  }>;
+  remediation_priority?: Array<{
+    action: string;
+    why: string;
+    effort: string;
+  }>;
+  african_context?: string;
+  disclaimer?: string;
+}
+
+function ParsedAIAnalysis({ analysis, summary }: { analysis: string; summary: string }) {
+  let parsed: ParsedAnalysis = {};
+  let isJson = false;
+
+  try {
+    const jsonMatch = analysis.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      parsed = JSON.parse(jsonMatch[0]);
+      isJson = true;
+    }
+  } catch {
+    // Not JSON
+  }
+
+  // If not useful JSON, show summary + raw text
+  if (!isJson || (!parsed.critical_findings && !parsed.remediation_priority && !parsed.attack_paths)) {
+    return (
+      <div className="space-y-3">
+        {summary && <p className="text-sm text-brand-300 leading-relaxed">{summary}</p>}
+        {analysis && !analysis.includes('available on Starter') && (
+          <p className="text-xs text-brand-500 leading-relaxed whitespace-pre-wrap mt-2">{analysis}</p>
+        )}
+      </div>
+    );
+  }
+
+  const criticals = parsed.critical_findings || [];
+  const attackPaths = parsed.attack_paths || [];
+  const remediation = parsed.remediation_priority || [];
+  const africanContext = parsed.african_context;
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      {(parsed.risk_summary || parsed.summary || summary) && (
+        <p className="text-sm text-brand-300 leading-relaxed">
+          {parsed.risk_summary || parsed.summary || summary}
+        </p>
+      )}
+
+      {/* Critical Findings */}
+      {criticals.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2">Critical Findings</p>
+          <div className="space-y-1.5">
+            {criticals.map((f, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm text-red-300">
+                <span className="text-red-500 mt-0.5">•</span>
+                <span>{f.replace(/^\[.*?\]\s*/, '')}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Attack Paths */}
+      {attackPaths.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-2">Attack Paths</p>
+          <div className="space-y-2">
+            {attackPaths.map((path, i) => (
+              <div key={i} className="p-3 rounded-lg bg-dark-bg/50 border border-dark-border">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-semibold text-dark-text">{path.name}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    path.severity === 'critical' ? 'bg-red-500/20 text-red-400' :
+                    path.severity === 'high' ? 'bg-orange-500/20 text-orange-400' :
+                    'bg-yellow-500/20 text-yellow-400'
+                  }`}>{path.severity}</span>
+                </div>
+                <p className="text-xs text-brand-500">{path.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Remediation */}
+      {remediation.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">Remediation Priority</p>
+          <div className="space-y-1.5">
+            {remediation.map((item, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm">
+                <span className={`mt-0.5 ${
+                  item.effort === 'low' ? 'text-emerald-500' :
+                  item.effort === 'medium' ? 'text-yellow-500' : 'text-red-500'
+                }`}>→</span>
+                <div>
+                  <span className="text-brand-300">{item.action}</span>
+                  <span className="text-brand-600 text-xs ml-2">({item.effort} effort)</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* African Context */}
+      {africanContext && (
+        <div className="p-3 rounded-lg bg-brand-500/5 border border-brand-500/10">
+          <p className="text-xs font-semibold text-brand-400 mb-1">African Context</p>
+          <p className="text-xs text-brand-500">{africanContext}</p>
+        </div>
+      )}
+
+      {/* Disclaimer */}
+      {parsed.disclaimer && (
+        <p className="text-[10px] text-brand-700 italic">{parsed.disclaimer}</p>
+      )}
     </div>
   );
 }
