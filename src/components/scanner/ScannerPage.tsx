@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Search, Shield, Zap, Lock, AlertTriangle, CheckCircle, XCircle,
   ChevronDown, Clock, Eye, Target, ArrowRight, Sparkles, ShieldCheck,
-  ArrowLeft, User, LogOut, ChevronDown as ChevronDownIcon
+  ArrowLeft, User, LogOut, ChevronDown as ChevronDownIcon, Settings
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
@@ -211,12 +211,18 @@ export default function ScannerPage() {
                     <p className="text-sm font-medium text-dark-text">{user.email}</p>
                     <p className="text-xs text-brand-500 mt-0.5 capitalize">{subscriptionTier} Plan</p>
                   </div>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full px-4 py-3 text-left text-sm text-brand-400 hover:bg-dark-border/50 flex items-center gap-2 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" /> Sign Out
-                  </button>
+              <button
+                onClick={handleSignOut}
+                className="w-full px-4 py-3 text-left text-sm text-brand-400 hover:bg-dark-border/50 flex items-center gap-2 transition-colors"
+              >
+                <LogOut className="w-4 h-4" /> Sign Out
+              </button>
+              <a
+                href="/settings"
+                className="w-full px-4 py-3 text-left text-sm text-brand-400 hover:bg-dark-border/50 flex items-center gap-2 transition-colors border-t border-dark-border"
+              >
+                <Settings className="w-4 h-4" /> Settings
+              </a>
                 </div>
               )}
             </div>
