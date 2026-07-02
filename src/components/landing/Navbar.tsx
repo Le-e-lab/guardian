@@ -75,7 +75,7 @@ export default function Navbar({ onSignIn }: NavbarProps) {
               </div>
               <span className={`font-bold tracking-tight font-[family-name:var(--font-display)] text-brand-800 transition-all duration-300 ${
                 condensed ? 'text-sm' : 'text-base'
-              }`}>SENTARI</span>
+              }`}>GUARDIAN</span>
             </a>
 
             {/* Center spacer */}
@@ -126,7 +126,7 @@ export default function Navbar({ onSignIn }: NavbarProps) {
             <div className="w-7 h-7 rounded-lg bg-brand-500 flex items-center justify-center transition-all group-hover:bg-brand-600">
               <Shield className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="text-sm font-bold tracking-tight font-[family-name:var(--font-display)] text-brand-800">SENTARI</span>
+            <span className="text-sm font-bold tracking-tight font-[family-name:var(--font-display)] text-brand-800">GUARDIAN</span>
           </a>
           <button onClick={() => setMobileOpen(true)}
             className="w-8 h-8 rounded-xl bg-brand-100 flex items-center justify-center text-brand-600 hover:bg-brand-200 transition-colors"
@@ -157,7 +157,7 @@ export default function Navbar({ onSignIn }: NavbarProps) {
                 <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
                   <Shield className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-base font-bold tracking-tight font-[family-name:var(--font-display)] text-brand-800">SENTARI</span>
+                <span className="text-base font-bold tracking-tight font-[family-name:var(--font-display)] text-brand-800">GUARDIAN</span>
               </div>
               <button onClick={() => setMobileOpen(false)}
                 className="w-8 h-8 rounded-xl bg-brand-100 flex items-center justify-center text-brand-500 hover:bg-brand-200 transition-colors"

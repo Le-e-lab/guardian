@@ -44,7 +44,7 @@ const TIERS = [
     desc: 'Coming after beta. Contact for early access.',
     features: ['Unlimited scans', 'Everything in Professional', 'Active vulnerability testing', 'Continuous monitoring', 'Compliance templates', 'Dedicated support'],
     cta: 'Contact Us',
-    ctaLink: 'mailto:hello@sentari.dev',
+    ctaLink: 'mailto:hello@guardian.dev',
     highlighted: false,
   },
 ];
@@ -84,7 +84,7 @@ export default function PricingPage() {
             { label: 'Pentera', price: '$35K+/yr', active: false },
             { label: 'XBOW', price: '$6K+/test', active: false },
             { label: 'Cybervergent', price: 'Custom', active: false },
-            { label: 'Sentari', price: 'Beta (Free)', active: true },
+            { label: 'Guardian', price: 'Beta (Free)', active: true },
           ].map(({ label, price, active }) => (
             <div key={label} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm border transition-all ${
               active ? 'bg-brand-500 text-white border-brand-500 font-semibold shadow-lg shadow-brand-500/20' : 'bg-brand-100/50 text-brand-600 border-brand-200/50'
@@ -147,7 +147,7 @@ export default function PricingPage() {
                   <th className="text-left px-5 py-4 font-semibold text-brand-800">Origin</th>
                   <th className="text-left px-5 py-4 font-semibold text-brand-800">Product</th>
                   <th className="text-left px-5 py-4 font-semibold text-brand-800">Pricing</th>
-                  <th className="text-left px-5 py-4 font-semibold text-brand-800 hidden sm:table-cell">Gap vs Sentari</th>
+                  <th className="text-left px-5 py-4 font-semibold text-brand-800 hidden sm:table-cell">Gap vs Guardian</th>
                 </tr>
               </thead>
               <tbody>
@@ -161,7 +161,7 @@ export default function PricingPage() {
                   </tr>
                 ))}
                 <tr className="bg-brand-500/5">
-                  <td className="px-5 py-3.5 font-semibold text-brand-800">Sentari</td>
+                  <td className="px-5 py-3.5 font-semibold text-brand-800">Guardian</td>
                   <td className="px-5 py-3.5 text-brand-600">Zimbabwe</td>
                   <td className="px-5 py-3.5 text-brand-600">AI-native offensive validation</td>
                   <td className="px-5 py-3.5 text-brand-500 font-bold">Free (Beta)</td>

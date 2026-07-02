@@ -164,7 +164,7 @@ export default function LandingPage() {
           <blockquote className="text-xl sm:text-2xl font-[family-name:var(--font-display)] text-brand-800 leading-relaxed mb-6">
             &ldquo;Zimbabwe&apos;s businesses deserve to know where they stand — before an attacker does. We&apos;re building the shield.&rdquo;
           </blockquote>
-          <p className="text-brand-500 text-sm font-medium uppercase tracking-widest">Sentari Mission Statement</p>
+          <p className="text-brand-500 text-sm font-medium uppercase tracking-widest">Guardian Mission Statement</p>
         </div>
       </section>
 
@@ -209,7 +209,7 @@ function ZimbabweTab() {
               But <strong className="text-brand-800">70%+ of Zimbabwean firms lack basic cybersecurity</strong>. The tools to protect these systems cost $35,000-$250,000 per year — more than most companies&apos; entire IT budgets.
             </p>
             <p>
-              <strong className="text-brand-800">Sentari changes the equation.</strong> Built in Harare by Elevate Value Partners, we deliver enterprise-grade compliance scanning at $49/month — because the cost of not doing it is measured in breached trust, stolen funds, and collapsed businesses.
+              <strong className="text-brand-800">Guardian changes the equation.</strong> Built in Harare by Elevate Value Partners, we deliver enterprise-grade compliance scanning at $49/month — because the cost of not doing it is measured in breached trust, stolen funds, and collapsed businesses.
             </p>
           </div>
           <div className="mt-8 flex items-center gap-4 p-5 bg-brand-100 rounded-xl border border-brand-200/50">
@@ -246,7 +246,7 @@ function ZimbabweTab() {
             </div>
             <div className="bg-brand-100/50 rounded-xl p-4 text-center border border-brand-200/50">
               <div className="text-xl sm:text-2xl font-bold text-brand-500 font-[family-name:var(--font-display)]">$49</div>
-              <div className="text-xs text-brand-600 mt-1">Sentari monthly price</div>
+              <div className="text-xs text-brand-600 mt-1">Guardian monthly price</div>
             </div>
           </div>
         </div>
@@ -306,7 +306,7 @@ function AfricaTab() {
           One platform. Every African data protection law.
         </h3>
         <p className="text-brand-600 text-base sm:text-lg max-w-2xl mx-auto">
-          From POPIA to NDPA to Kenya DPA — Sentari automates compliance across the continent. No other platform understands African data protection like we do.
+          From POPIA to NDPA to Kenya DPA — Guardian automates compliance across the continent. No other platform understands African data protection like we do.
         </p>
       </div>
 
@@ -346,7 +346,7 @@ function AfricaTab() {
         </div>
         <div className="mt-4 pt-4 border-t border-brand-200/50">
           <p className="text-sm text-brand-700">
-            <strong className="text-brand-800">Sentari</strong> is the only platform that combines <strong>automated compliance scanning</strong> with <strong>AI-powered remediation guidance</strong> across all major African data protection laws.
+            <strong className="text-brand-800">Guardian</strong> is the only platform that combines <strong>automated compliance scanning</strong> with <strong>AI-powered remediation guidance</strong> across all major African data protection laws.
           </p>
         </div>
       </div>

@@ -11,7 +11,7 @@ export default function Footer() {
               <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
                 <Shield className="w-4 h-4 text-white" />
               </div>
-              <span className="text-base font-bold tracking-tight font-[family-name:var(--font-display)]">SENTARI</span>
+              <span className="text-base font-bold tracking-tight font-[family-name:var(--font-display)]">GUARDIAN</span>
             </div>
             <p className="text-sm text-brand-600 leading-relaxed max-w-xs mb-3">
               Africa-first AI-native offensive cyber validation platform. Built in Harare, deployed across the continent.
@@ -68,7 +68,7 @@ export default function Footer() {
 
         <div className="border-t border-brand-200/50 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-brand-500">
-            &copy; {new Date().getFullYear()} Sentari. All rights reserved.
+            &copy; {new Date().getFullYear()} Guardian. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-xs text-brand-500">
             <span className="text-brand-400">Privacy</span>

@@ -2,8 +2,8 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — Sentari',
-  description: 'Terms of Service for Sentari cybersecurity compliance platform.',
+  title: 'Terms of Service — Guardian',
+  description: 'Terms of Service for Guardian cybersecurity compliance platform.',
 };
 
 export default function TermsOfService() {
@@ -11,7 +11,7 @@ export default function TermsOfService() {
     <div className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Link href="/" className="text-sm text-brand-500 hover:text-brand-600 mb-8 inline-block">
-          ← Back to Sentari
+          ← Back to Guardian
         </Link>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Terms of Service</h1>
@@ -21,14 +21,14 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">1. Acceptance of Terms</h2>
             <p className="text-gray-700 leading-relaxed">
-              By accessing or using Sentari (&quot;the Platform&quot;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Platform.
+              By accessing or using Guardian (&quot;the Platform&quot;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Platform.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">2. Authorized Use Only</h2>
             <p className="text-gray-700 leading-relaxed">
-              Sentari is designed for <strong>authorized security testing and compliance assessment only</strong>. You may only scan domains and infrastructure that you:
+              Guardian is designed for <strong>authorized security testing and compliance assessment only</strong>. You may only scan domains and infrastructure that you:
             </p>
             <ul className="list-disc pl-6 text-gray-700 space-y-2 mt-2">
               <li>Own outright</li>
@@ -43,7 +43,7 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">3. Limitation of Liability</h2>
             <p className="text-gray-700 leading-relaxed">
-              Sentari is provided &quot;as is&quot; for informational and compliance assessment purposes. <strong>Under no circumstances shall Sentari, its operators, or affiliates be liable for:</strong>
+              Guardian is provided &quot;as is&quot; for informational and compliance assessment purposes. <strong>Under no circumstances shall Guardian, its operators, or affiliates be liable for:</strong>
             </p>
             <ul className="list-disc pl-6 text-gray-700 space-y-2 mt-2">
               <li>Any damage, disruption, or unauthorized access to systems scanned using the Platform</li>
@@ -57,12 +57,12 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">4. WAF and Service Provider Risks</h2>
             <p className="text-gray-700 leading-relaxed">
-              Sentari uses passive reconnaissance techniques (DNS lookups, HTTP header analysis, certificate transparency logs, and public OSINT data). However:
+              Guardian uses passive reconnaissance techniques (DNS lookups, HTTP header analysis, certificate transparency logs, and public OSINT data). However:
             </p>
             <ul className="list-disc pl-6 text-gray-700 space-y-2 mt-2">
-              <li><strong>WAF bans:</strong> Some Web Application Firewalls may flag Sentari&apos;s scanning activity. Sentari is not responsible for any IP bans, rate limiting, or service disruptions caused by your use of the Platform.</li>
+              <li><strong>WAF bans:</strong> Some Web Application Firewalls may flag Guardian&apos;s scanning activity. Guardian is not responsible for any IP bans, rate limiting, or service disruptions caused by your use of the Platform.</li>
               <li><strong>False positives:</strong> Our AI-powered analysis may produce false positives. Always verify findings with manual testing before making changes to production systems.</li>
-              <li><strong>Third-party services:</strong> Sentari relies on third-party data sources (DNS providers, certificate transparency logs, breach databases). We do not control these services and are not responsible for their accuracy or availability.</li>
+              <li><strong>Third-party services:</strong> Guardian relies on third-party data sources (DNS providers, certificate transparency logs, breach databases). We do not control these services and are not responsible for their accuracy or availability.</li>
             </ul>
           </section>
 
@@ -76,7 +76,7 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">6. AI-Generated Content</h2>
             <p className="text-gray-700 leading-relaxed">
-              Sentari uses artificial intelligence to analyze scan results and generate recommendations. AI-generated content:
+              Guardian uses artificial intelligence to analyze scan results and generate recommendations. AI-generated content:
             </p>
             <ul className="list-disc pl-6 text-gray-700 space-y-2 mt-2">
               <li>May contain inaccuracies or incomplete analysis</li>
@@ -116,14 +116,14 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">10. Contact</h2>
             <p className="text-gray-700 leading-relaxed">
-              For questions about these Terms, contact us at: <a href="mailto:legal@sentari.dev" className="text-brand-500 hover:text-brand-600">legal@sentari.dev</a>
+              For questions about these Terms, contact us at: <a href="mailto:legal@guardian.dev" className="text-brand-500 hover:text-brand-600">legal@guardian.dev</a>
             </p>
           </section>
         </div>
 
         <div className="mt-12 pt-8 border-t border-gray-200">
           <Link href="/" className="text-sm text-brand-500 hover:text-brand-600">
-            ← Back to Sentari
+            ← Back to Guardian
           </Link>
         </div>
       </div>

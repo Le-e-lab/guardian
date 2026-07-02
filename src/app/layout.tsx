@@ -16,9 +16,9 @@ const ibmPlexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'SENTARI — Cybersecurity Compliance for Zimbabwe',
-  description: 'AI-powered cybersecurity compliance scanning for Zimbabwe. Automated assessments, audit-ready reports, and remediation guidance. Data sovereign. From $49/mo.',
-  keywords: ['cybersecurity', 'Zimbabwe', 'compliance', 'data protection', 'POPIA', 'EcoCash', 'Harare', 'AI security', 'audit-ready', 'vulnerability scanning'],
+  title: 'Guardian — Cybersecurity Compliance for Zimbabwe',
+  description: 'AI-powered cybersecurity compliance scanning for Zimbabwe. Automated assessments, audit-ready reports, and remediation guidance. Data sovereign. Free during beta.',
+  keywords: ['cybersecurity', 'Zimbabwe', 'compliance', 'data protection', 'POPIA', 'EcoCash', 'Harare', 'AI security', 'audit-ready', 'vulnerability scanning', 'guardian'],
 };
 
 export default function RootLayout({

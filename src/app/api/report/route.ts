@@ -64,7 +64,7 @@ function generateReportHTML(target: Record<string, unknown>, vulns: Record<strin
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SENTARI Threat Assessment Report - ${target.target_url}</title>
+  <title>Guardian Threat Assessment Report - ${target.target_url}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0A0E17; color: #F9FAFB; line-height: 1.6; }
@@ -239,7 +239,7 @@ function generateReportHTML(target: Record<string, unknown>, vulns: Record<strin
     </div>
 
     <div class="footer">
-      <p>SENTARI — Cybersecurity Compliance for Zimbabwe</p>
+      <p>Guardian — Cybersecurity Compliance for Zimbabwe</p>
       <p>Generated ${new Date().toISOString()} • This report is confidential</p>
     </div>
   </div>
