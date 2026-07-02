@@ -20,6 +20,8 @@ import { isOffensiveScanningEnabled, hasOffensiveAccess } from '@/lib/feature-fl
 import { detectBot, checkFreeScanLimit } from '@/lib/bot-detection';
 import { runComplianceCheck } from '@/lib/compliance-checker';
 import { runEmailSecurityCheck } from '@/lib/email-security';
+import { checkDomainReputation } from '@/lib/virustotal';
+import { runPortScan } from '@/lib/port-scanner';
 
 // Enhanced rate limiting with cleanup
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -300,6 +302,22 @@ export async function POST(request: NextRequest) {
       console.error('[EMAIL] Check failed:', err);
     }
 
+    // Run VirusTotal domain reputation check
+    let virusTotal = null;
+    try {
+      virusTotal = await checkDomainReputation(cleanTarget);
+    } catch (err) {
+      console.error('[VT] Check failed:', err);
+    }
+
+    // Run port scan
+    let portScan = null;
+    try {
+      portScan = await runPortScan(cleanTarget);
+    } catch (err) {
+      console.error('[PORT] Scan failed:', err);
+    }
+
     const threatLevel = calculateThreatLevel(allFindings);
 
     // Build full response first
@@ -407,6 +425,38 @@ export async function POST(request: NextRequest) {
           regulationSection: f.regulationSection,
           remediation: f.remediation,
           effort: f.effort,
+        })),
+      } : null,
+      // VirusTotal domain reputation
+      virusTotal: virusTotal ? {
+        domain: virusTotal.domain,
+        malicious: virusTotal.malicious,
+        suspicious: virusTotal.suspicious,
+        harmless: virusTotal.harmless,
+        reputation: virusTotal.reputation,
+        riskLevel: virusTotal.riskLevel,
+        findings: virusTotal.findings.map(f => ({
+          title: f.title,
+          severity: f.severity,
+          plainEnglish: f.plainEnglish,
+        })),
+      } : null,
+      // Port scan results
+      portScan: portScan ? {
+        domain: portScan.domain,
+        openPorts: portScan.openPorts,
+        ports: portScan.ports.filter(p => p.state === 'open').map(p => ({
+          port: p.port,
+          service: p.service,
+          risk: p.risk,
+          description: p.description,
+        })),
+        findings: portScan.findings.map(f => ({
+          title: f.title,
+          severity: f.severity,
+          plainEnglish: f.plainEnglish,
+          regulation: f.regulation,
+          remediation: f.remediation,
         })),
       } : null,
       disclaimers: [
