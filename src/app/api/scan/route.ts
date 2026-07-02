@@ -19,6 +19,7 @@ import { requireAuth, getAuthUser } from '@/lib/auth-middleware';
 import { isOffensiveScanningEnabled, hasOffensiveAccess } from '@/lib/feature-flags';
 import { detectBot, checkFreeScanLimit } from '@/lib/bot-detection';
 import { runComplianceCheck } from '@/lib/compliance-checker';
+import { runEmailSecurityCheck } from '@/lib/email-security';
 
 // Enhanced rate limiting with cleanup
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -291,6 +292,14 @@ export async function POST(request: NextRequest) {
       console.error('[COMPLIANCE] Check failed:', err);
     }
 
+    // Run email security check
+    let emailSecurity = null;
+    try {
+      emailSecurity = await runEmailSecurityCheck(cleanTarget);
+    } catch (err) {
+      console.error('[EMAIL] Check failed:', err);
+    }
+
     const threatLevel = calculateThreatLevel(allFindings);
 
     // Build full response first
@@ -380,6 +389,25 @@ export async function POST(request: NextRequest) {
             expected: r.expectedValue,
           })),
         context: complianceData.context,
+      } : null,
+      // Email security data
+      emailSecurity: emailSecurity ? {
+        score: emailSecurity.riskScore,
+        dmarc: emailSecurity.dmarc,
+        spf: emailSecurity.spf,
+        dkim: emailSecurity.dkim,
+        mx: emailSecurity.mx,
+        findings: emailSecurity.findings.map(f => ({
+          title: f.title,
+          severity: f.severity,
+          category: f.category,
+          description: f.description,
+          plainEnglish: f.plainEnglish,
+          regulation: f.regulation,
+          regulationSection: f.regulationSection,
+          remediation: f.remediation,
+          effort: f.effort,
+        })),
       } : null,
       disclaimers: [
         'This assessment is for authorized security testing only.',

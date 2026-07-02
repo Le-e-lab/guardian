@@ -84,6 +84,22 @@ interface ScanResult {
     }>;
     context: Record<string, unknown>;
   };
+  emailSecurity?: {
+    score: number;
+    dmarc: { present: boolean; record: string | null; policy: string | null; error: string | null };
+    spf: { present: boolean; record: string | null; mechanism: string | null; error: string | null };
+    dkim: { present: boolean; selector: string | null; record: string | null; error: string | null };
+    mx: { present: boolean; records: string[]; error: string | null };
+    findings: Array<{
+      title: string;
+      severity: string;
+      category: string;
+      plainEnglish: string;
+      regulation: string;
+      regulationSection: string;
+      remediation: string;
+    }>;
+  };
 }
 
 export default function ScanPage() {
@@ -333,6 +349,97 @@ export default function ScanPage() {
                     <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
                     <p className="text-sm font-semibold text-green-800">All compliance controls passed</p>
                     <p className="text-xs text-green-600">Your site meets the checked regulatory requirements</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Email Security */}
+            {result.emailSecurity && (
+              <div className="p-6 border-b border-brand-200/50">
+                <p className="text-xs text-brand-500 uppercase tracking-wider mb-3">Email Security (DMARC/SPF/DKIM)</p>
+                
+                {/* Email Security Score */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`text-2xl font-bold font-[family-name:var(--font-display)] ${result.emailSecurity.score >= 80 ? 'text-green-600' : result.emailSecurity.score >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {result.emailSecurity.score}/100
+                  </div>
+                  <span className="text-xs text-brand-600">Email authentication score</span>
+                </div>
+
+                {/* Protocol Status */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className={`p-3 rounded-lg border ${result.emailSecurity.dmarc.present ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-center gap-2">
+                      {result.emailSecurity.dmarc.present ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                      <span className="text-sm font-medium">DMARC</span>
+                    </div>
+                    <p className="text-[10px] text-brand-600 mt-1">
+                      {result.emailSecurity.dmarc.present 
+                        ? `Policy: ${result.emailSecurity.dmarc.policy || 'none'}`
+                        : 'Not configured'}
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded-lg border ${result.emailSecurity.spf.present ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-center gap-2">
+                      {result.emailSecurity.spf.present ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                      <span className="text-sm font-medium">SPF</span>
+                    </div>
+                    <p className="text-[10px] text-brand-600 mt-1">
+                      {result.emailSecurity.spf.present 
+                        ? `Mechanism: ${result.emailSecurity.spf.mechanism || 'unknown'}`
+                        : 'Not configured'}
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded-lg border ${result.emailSecurity.dkim.present ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-center gap-2">
+                      {result.emailSecurity.dkim.present ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                      <span className="text-sm font-medium">DKIM</span>
+                    </div>
+                    <p className="text-[10px] text-brand-600 mt-1">
+                      {result.emailSecurity.dkim.present 
+                        ? `Selector: ${result.emailSecurity.dkim.selector || 'unknown'}`
+                        : 'Not configured'}
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded-lg border ${result.emailSecurity.mx.present ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                    <div className="flex items-center gap-2">
+                      {result.emailSecurity.mx.present ? <CheckCircle className="w-4 h-4 text-green-500" /> : <AlertTriangle className="w-4 h-4 text-yellow-500" />}
+                      <span className="text-sm font-medium">MX Records</span>
+                    </div>
+                    <p className="text-[10px] text-brand-600 mt-1">
+                      {result.emailSecurity.mx.present 
+                        ? `${result.emailSecurity.mx.records.length} record(s)`
+                        : 'Not configured'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Email Security Findings */}
+                {result.emailSecurity.findings.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-red-600 uppercase tracking-wider mb-2">
+                      Email Security Issues ({result.emailSecurity.findings.length})
+                    </p>
+                    <div className="space-y-3">
+                      {result.emailSecurity.findings.map((f, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-red-50/50 border border-red-200/50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                              f.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                              f.severity === 'high' ? 'bg-orange-100 text-orange-700' :
+                              'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {f.severity}
+                            </span>
+                            <span className="text-[10px] text-brand-500">{f.regulation} {f.regulationSection}</span>
+                          </div>
+                          <p className="text-sm font-medium text-brand-800 mb-1">{f.title}</p>
+                          <p className="text-xs text-brand-600 mb-2">{f.plainEnglish}</p>
+                          <p className="text-[10px] text-brand-500 italic">Fix: {f.remediation}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
