@@ -32,6 +32,20 @@ interface ScanResult {
   tier?: string;
   adaptiveDefense?: { threatLevel: string; threatScore: number; immediateActions: string[]; };
   userRole?: string;
+  compliance?: {
+    overallScore: number;
+    regulations: Array<{ name: string; score: number; passed: number; failed: number; total: number; }>;
+    failedControls: Array<{ id: string; regulation: string; section: string; title: string; plainEnglish: string; remediation: string; effort: string; actual: string; expected: string; }>;
+    context: Record<string, unknown>;
+  };
+  emailSecurity?: {
+    score: number;
+    dmarc: { present: boolean; record: string | null; policy: string | null; error: string | null; };
+    spf: { present: boolean; record: string | null; mechanism: string | null; error: string | null; };
+    dkim: { present: boolean; selector: string | null; record: string | null; error: string | null; };
+    mx: { present: boolean; records: string[]; error: string | null; };
+    findings: Array<{ title: string; severity: string; category: string; plainEnglish: string; regulation: string; regulationSection: string; remediation: string; }>;
+  };
 }
 
 const SEVERITY: Record<string, { bg: string; text: string; border: string; icon: typeof XCircle }> = {
@@ -365,6 +379,91 @@ export default function ScannerPage() {
                 <ParsedAIAnalysis analysis={result.ai_analysis} summary={result.risk_summary} />
               )}
             </div>
+
+            {/* Compliance Status */}
+            {result.compliance && (
+              <div className="bg-dark-surface border border-dark-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold text-dark-text mb-3 font-[family-name:var(--font-display)]">
+                  Compliance Status
+                </h3>
+                <p className="text-xs text-brand-500 mb-4">Regulatory compliance across {result.compliance.regulations.length} frameworks</p>
+                
+                <div className="space-y-3 mb-4">
+                  {result.compliance.regulations.map((reg, i) => (
+                    <div key={i}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-dark-text">{reg.name}</span>
+                        <span className={`text-sm font-bold ${reg.score >= 80 ? 'text-emerald-400' : reg.score >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
+                          {reg.score}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-dark-bg rounded-full h-2">
+                        <div className={`h-2 rounded-full ${reg.score >= 80 ? 'bg-emerald-500' : reg.score >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${reg.score}%` }} />
+                      </div>
+                      <p className="text-[10px] text-brand-600 mt-1">{reg.passed}/{reg.total} controls passed</p>
+                    </div>
+                  ))}
+                </div>
+
+                {result.compliance.failedControls.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-red-400 uppercase tracking-wider">What Needs Fixing</p>
+                    {result.compliance.failedControls.map((fc, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-red-500/5 border border-red-500/10">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-red-500/20 text-red-400">{fc.regulation}</span>
+                          <span className="text-[10px] text-brand-600">{fc.section}</span>
+                        </div>
+                        <p className="text-sm font-medium text-dark-text mb-1">{fc.title}</p>
+                        <p className="text-xs text-brand-500">{fc.plainEnglish}</p>
+                        <p className="text-[10px] text-brand-600 mt-1 italic">Fix: {fc.remediation}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Email Security */}
+            {result.emailSecurity && (
+              <div className="bg-dark-surface border border-dark-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold text-dark-text mb-3 font-[family-name:var(--font-display)]">
+                  Email Security (DMARC/SPF/DKIM)
+                </h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className={`text-2xl font-bold ${result.emailSecurity.score >= 80 ? 'text-emerald-400' : result.emailSecurity.score >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
+                    {result.emailSecurity.score}/100
+                  </span>
+                  <span className="text-xs text-brand-500">Email authentication score</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {[
+                    { name: 'DMARC', ok: result.emailSecurity.dmarc.present, detail: result.emailSecurity.dmarc.policy ? `Policy: ${result.emailSecurity.dmarc.policy}` : 'Not configured' },
+                    { name: 'SPF', ok: result.emailSecurity.spf.present, detail: result.emailSecurity.spf.mechanism ? `Mechanism: ${result.emailSecurity.spf.mechanism}` : 'Not configured' },
+                    { name: 'DKIM', ok: result.emailSecurity.dkim.present, detail: result.emailSecurity.dkim.selector ? `Selector: ${result.emailSecurity.dkim.selector}` : 'Not configured' },
+                    { name: 'MX', ok: result.emailSecurity.mx.present, detail: result.emailSecurity.mx.present ? `${result.emailSecurity.mx.records.length} record(s)` : 'Not configured' },
+                  ].map(({ name, ok, detail }) => (
+                    <div key={name} className={`p-2 rounded-lg border text-xs ${ok ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-red-500/5 border-red-500/10'}`}>
+                      <span className={`font-medium ${ok ? 'text-emerald-400' : 'text-red-400'}`}>{ok ? '✓' : '✗'} {name}</span>
+                      <p className="text-[10px] text-brand-600 mt-0.5">{detail}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {result.emailSecurity.findings.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-red-400 uppercase tracking-wider">Email Security Issues ({result.emailSecurity.findings.length})</p>
+                    {result.emailSecurity.findings.map((f, i) => (
+                      <div key={i} className="p-2 rounded-lg bg-red-500/5 border border-red-500/10">
+                        <p className="text-xs font-medium text-dark-text">{f.title}</p>
+                        <p className="text-[10px] text-brand-500">{f.plainEnglish}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Vulnerabilities */}
             <div className="bg-dark-surface border border-dark-border rounded-2xl p-6">
