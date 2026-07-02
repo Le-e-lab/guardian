@@ -540,13 +540,13 @@ export default function ScanPage() {
               </div>
             )}
 
-            {/* AI Analysis (Parsed) */}
+            {/* AI Analysis (Parsed) — always show during beta */}
             {result.ai_analysis && !result.ai_analysis.includes('available on Starter') && (
               <AIAnalysisSection analysis={result.ai_analysis} />
             )}
 
-            {/* Upgrade Gate */}
-            {result.upgrade_gated && (
+            {/* Upgrade Gate — Beta: all features free (hidden during beta) */}
+            {/* {result.upgrade_gated && (
               <div className="p-6 bg-brand-500/5">
                 <div className="flex items-start gap-3">
                   <Shield className="w-5 h-5 text-brand-500 mt-0.5" />
@@ -564,7 +564,7 @@ export default function ScanPage() {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Disclaimers */}
             <div className="p-4 bg-brand-50/50">

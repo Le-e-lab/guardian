@@ -38,8 +38,8 @@ export const GUARDRAIL_CONFIGS: Record<UserRole, GuardrailConfig> = {
   public: {
     role: 'public',
     scanMode: 'passive',
-    allowedModules: ['dns', 'tech', 'headers'],
-    blockedModules: ['ports', 'ssl', 'subdomains', 'credentials', 'social', 'active'],
+    allowedModules: ['dns', 'tech', 'headers', 'ports', 'ssl', 'subdomains'],
+    blockedModules: ['credentials', 'social', 'active'],
     maxScanTargets: 1,
     maxScansPerDay: 3,
     dataRetentionDays: 1,
@@ -50,17 +50,17 @@ export const GUARDRAIL_CONFIGS: Record<UserRole, GuardrailConfig> = {
     resultVisibility: {
       showRiskScore: true,
       showFindingsCount: true,
-      showFindingDetails: false,
-      showRemediation: false,
-      showAIAnalysis: false,
+      showFindingDetails: true,
+      showRemediation: true,
+      showAIAnalysis: true,
       showAttackPaths: false,
-      maxFindingPreviews: 0,
+      maxFindingPreviews: 10,
     },
   },
   free: {
     role: 'free',
     scanMode: 'passive',
-    allowedModules: ['dns', 'ports', 'tech', 'ssl', 'headers', 'subdomains'],
+    allowedModules: ['dns', 'tech', 'headers', 'ports', 'ssl', 'subdomains'],
     blockedModules: ['credentials', 'social', 'active'],
     maxScanTargets: 10,
     maxScansPerDay: 10,
@@ -72,11 +72,11 @@ export const GUARDRAIL_CONFIGS: Record<UserRole, GuardrailConfig> = {
     resultVisibility: {
       showRiskScore: true,
       showFindingsCount: true,
-      showFindingDetails: false,   // LOCKED — upgrade to see details
-      showRemediation: false,       // LOCKED — upgrade to see fixes
-      showAIAnalysis: false,        // LOCKED — upgrade to see AI reasoning
-      showAttackPaths: false,       // LOCKED — upgrade to see attack paths
-      maxFindingPreviews: 3,        // Show top 3 findings as teaser
+      showFindingDetails: true,
+      showRemediation: true,
+      showAIAnalysis: true,
+      showAttackPaths: false,
+      maxFindingPreviews: 10,
     },
   },
   starter: {
