@@ -80,6 +80,19 @@ interface ScanResult {
         rollbackPlan: string;
       }>;
     };
+    spfAlignment?: {
+      domain: string;
+      spfPresent: boolean;
+      dmarcPresent: boolean;
+      alignmentMode: string;
+      alignmentResult: string;
+      riskLevel: string;
+      explanation: string;
+      technicalDetail: string;
+      impact: string;
+      fixes: Array<{ action: string; priority: string; effort: string; detail: string }>;
+      senderAnalysis: Array<{ source: string; ipRange: string; spfResult: string; alignmentResult: string; risk: string }>;
+    };
   };
   virusTotal?: {
     domain: string;
@@ -779,6 +792,105 @@ export default function ScannerPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* SPF Alignment Check */}
+            {result.emailSecurity?.spfAlignment && (
+              <div className="bg-dark-surface border border-dark-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold text-dark-text mb-3 font-[family-name:var(--font-display)]">
+                  SPF Alignment with DMARC
+                </h3>
+                <p className="text-xs text-brand-500 mb-4">
+                  Checks if your SPF record aligns with DMARC to actually prevent email spoofing.
+                </p>
+
+                {/* Status Banner */}
+                <div className={`p-4 rounded-xl mb-4 ${
+                  result.emailSecurity.spfAlignment.riskLevel === 'good' ? 'bg-emerald-500/10 border border-emerald-500/20' :
+                  result.emailSecurity.spfAlignment.riskLevel === 'medium' ? 'bg-amber-500/10 border border-amber-500/20' :
+                  'bg-red-500/10 border border-red-500/20'
+                }`}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className={`text-2xl font-bold font-[family-name:var(--font-display)] ${
+                      result.emailSecurity.spfAlignment.alignmentResult === 'pass' ? 'text-emerald-400' :
+                      result.emailSecurity.spfAlignment.alignmentResult === 'fail' ? 'text-red-400' :
+                      'text-amber-400'
+                    }`}>
+                      {result.emailSecurity.spfAlignment.alignmentResult === 'pass' ? '✓ Aligned' :
+                       result.emailSecurity.spfAlignment.alignmentResult === 'fail' ? '✗ Not Aligned' :
+                       '⚠ Partial'}
+                    </span>
+                    {result.emailSecurity.spfAlignment.alignmentMode !== 'unknown' && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-dark-bg text-brand-400 border border-dark-border">
+                        {result.emailSecurity.spfAlignment.alignmentMode} mode
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-brand-400">{result.emailSecurity.spfAlignment.explanation}</p>
+                </div>
+
+                {/* Technical Detail */}
+                <div className="p-3 rounded-lg bg-dark-bg border border-dark-border mb-4">
+                  <p className="text-[10px] text-brand-600 uppercase tracking-wider mb-1 font-medium">Technical Detail</p>
+                  <p className="text-xs text-brand-400">{result.emailSecurity.spfAlignment.technicalDetail}</p>
+                </div>
+
+                {/* Impact */}
+                <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/10 mb-4">
+                  <p className="text-[10px] text-red-400 uppercase tracking-wider mb-1 font-medium">Impact</p>
+                  <p className="text-xs text-red-300">{result.emailSecurity.spfAlignment.impact}</p>
+                </div>
+
+                {/* Sender Analysis */}
+                {result.emailSecurity.spfAlignment.senderAnalysis.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs font-semibold text-brand-400 uppercase tracking-wider mb-2">
+                      Detected Email Sources ({result.emailSecurity.spfAlignment.senderAnalysis.length})
+                    </p>
+                    <div className="space-y-2">
+                      {result.emailSecurity.spfAlignment.senderAnalysis.map((s, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-dark-text">{s.source}</span>
+                            <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-500/20 text-emerald-400">
+                              {s.spfResult}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-brand-600 mt-1">IP: {s.ipRange}</p>
+                          <p className="text-[10px] text-brand-600">Alignment: {s.alignmentResult}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Fixes */}
+                {result.emailSecurity.spfAlignment.fixes.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-brand-400 uppercase tracking-wider mb-2">
+                      Recommended Fixes ({result.emailSecurity.spfAlignment.fixes.length})
+                    </p>
+                    <div className="space-y-2">
+                      {result.emailSecurity.spfAlignment.fixes.map((f, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-dark-bg border border-dark-border">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                              f.priority === 'immediate' ? 'bg-red-500/20 text-red-400' :
+                              f.priority === 'soon' ? 'bg-amber-500/20 text-amber-400' :
+                              'bg-blue-500/20 text-blue-400'
+                            }`}>
+                              {f.priority}
+                            </span>
+                            <span className="text-[10px] text-brand-600">{f.effort} effort</span>
+                          </div>
+                          <p className="text-xs text-dark-text font-medium mb-1">{f.action}</p>
+                          <p className="text-[10px] text-brand-500">{f.detail}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

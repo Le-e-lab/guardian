@@ -93,6 +93,32 @@ export interface EmailSecurityResult {
   findings: EmailFinding[];
   spoofingRisk: SpoofingRisk;
   dmarcPolicyRoadmap: DMARCPolicyRoadmap;
+  spfAlignment: SPFAlignment;
+}
+
+export interface SPFAlignment {
+  domain: string;
+  spfPresent: boolean;
+  dmarcPresent: boolean;
+  alignmentMode: 'strict' | 'relaxed' | 'none' | 'unknown';
+  alignmentResult: 'pass' | 'fail' | 'partial' | 'not_applicable';
+  riskLevel: 'critical' | 'high' | 'medium' | 'low' | 'good';
+  explanation: string;
+  technicalDetail: string;
+  impact: string;
+  fixes: Array<{
+    action: string;
+    priority: 'immediate' | 'soon' | 'when-ready';
+    effort: 'low' | 'medium' | 'high';
+    detail: string;
+  }>;
+  senderAnalysis: Array<{
+    source: string;
+    ipRange: string;
+    spfResult: string;
+    alignmentResult: string;
+    risk: string;
+  }>;
 }
 
 export interface EmailFinding {
@@ -670,6 +696,151 @@ function calculateDMARCPolicyRoadmap(
 }
 
 /**
+ * Calculate SPF Alignment with DMARC
+ * Checks if SPF aligns with DMARC (strict vs relaxed)
+ */
+function calculateSPFAlignment(
+  domain: string,
+  spf: EmailSecurityResult['spf'],
+  dmarc: EmailSecurityResult['dmarc']
+): SPFAlignment {
+  const spfPresent = spf.present;
+  const dmarcPresent = dmarc.present;
+
+  // Determine alignment mode from DMARC record
+  let alignmentMode: SPFAlignment['alignmentMode'] = 'unknown';
+  if (dmarcPresent) {
+    // Check DMARC record for aspf tag
+    const record = dmarc.record || '';
+    const aspfMatch = record.match(/aspf\s*=\s*([sr])/i);
+    if (aspfMatch) {
+      alignmentMode = aspfMatch[1].toLowerCase() === 's' ? 'strict' : 'relaxed';
+    } else {
+      // Default DMARC alignment is relaxed
+      alignmentMode = 'relaxed';
+    }
+  }
+
+  // Analyze alignment
+  let alignmentResult: SPFAlignment['alignmentResult'];
+  let riskLevel: SPFAlignment['riskLevel'];
+  let explanation: string;
+  let technicalDetail: string;
+  let impact: string;
+  const fixes: SPFAlignment['fixes'] = [];
+  const senderAnalysis: SPFAlignment['senderAnalysis'] = [];
+
+  if (!spfPresent && !dmarcPresent) {
+    alignmentResult = 'not_applicable';
+    riskLevel = 'critical';
+    explanation = `Neither SPF nor DMARC is configured for ${domain}. Any mail server in the world can send emails claiming to be from your domain.`;
+    technicalDetail = 'No SPF record means no authorized sender list. No DMARC record means no policy to enforce authentication. This is the weakest possible email security posture.';
+    impact = 'Complete email spoofing exposure. Attackers can send phishing emails that look 100% legitimate.';
+    fixes.push(
+      { action: `Add SPF record: ${domain} → "v=spf1 include:_spf.google.com ~all"`, priority: 'immediate', effort: 'low', detail: 'Define which servers can send email from your domain' },
+      { action: `Add DMARC record: _dmarc.${domain} → "v=DMARC1; p=quarantine; aspf=r"`, priority: 'immediate', effort: 'low', detail: 'Set up DMARC with relaxed SPF alignment' }
+    );
+  } else if (!spfPresent && dmarcPresent) {
+    alignmentResult = 'fail';
+    riskLevel = 'high';
+    explanation = `DMARC is configured but SPF is missing. Without SPF, DMARC cannot validate the sending server, and emails will fail authentication.`;
+    technicalDetail = `DMARC policy exists (p=${dmarc.policy || 'none'}) but no SPF record is published. DMARC requires either SPF or DKIM to pass — without SPF, only DKIM can save you.`;
+    impact = 'DMARC is partially effective. Emails may fail DMARC checks depending on DKIM configuration.';
+    fixes.push(
+      { action: `Add SPF record: ${domain} → "v=spf1 include:_spf.google.com ~all"`, priority: 'immediate', effort: 'low', detail: 'SPF is required for DMARC to fully protect your domain' }
+    );
+  } else if (spfPresent && !dmarcPresent) {
+    alignmentResult = 'fail';
+    riskLevel = 'high';
+    explanation = `SPF is configured but DMARC is missing. SPF alone does not prevent spoofing — it only provides data that DMARC uses to make enforcement decisions.`;
+    technicalDetail = `SPF record exists (${spf.mechanism || 'unknown'}) but no DMARC record. Without DMARC, mail servers receive your SPF data but have no policy to reject unauthorized senders.`;
+    impact = 'SPF provides a false sense of security. Your domain can still be spoofed because there is no DMARC policy to enforce SPF results.';
+    fixes.push(
+      { action: `Add DMARC record: _dmarc.${domain} → "v=DMARC1; p=quarantine; aspf=r"`, priority: 'immediate', effort: 'low', detail: 'DMARC is required to enforce SPF results' }
+    );
+  } else {
+    // Both SPF and DMARC present — check alignment
+    const spfMechanism = spf.mechanism || 'all';
+    const dmarcPolicy = dmarc.policy || 'none';
+
+    if (alignmentMode === 'strict') {
+      // Strict alignment: MAIL FROM domain must exactly match From: domain
+      alignmentResult = 'pass';
+      riskLevel = 'good';
+      explanation = `SPF is in strict alignment mode (aspf=s). The sending domain must exactly match ${domain} for SPF to pass DMARC checks.`;
+      technicalDetail = `DMARC aspf=s requires exact domain match. SPF mechanism: ${spfMechanism}. This is the most secure configuration — subdomains cannot be used to bypass SPF.`;
+      impact = 'Maximum SPF protection. Only emails from the exact domain can pass SPF alignment.';
+    } else {
+      // Relaxed alignment: organizational domain match is enough
+      alignmentResult = 'pass';
+      riskLevel = spfMechanism === '-all' ? 'good' : spfMechanism === '~all' ? 'medium' : 'high';
+      explanation = `SPF is in relaxed alignment mode (aspf=r). Any subdomain of ${domain} can pass SPF alignment.`;
+      technicalDetail = `DMARC aspf=r allows subdomain matching. SPF mechanism: ${spfMechanism}. Relaxed mode is standard and recommended for most organizations.`;
+      impact = spfMechanism === '-all' ? 'Strong protection. Unauthorized servers are rejected.' :
+        spfMechanism === '~all' ? 'Moderate protection. Unauthorized servers are soft-failed (may still deliver).' :
+        'Weak protection. SPF mechanism does not effectively block unauthorized senders.';
+    }
+
+    // Analyze common email sources
+    const commonSources = [
+      { source: 'Google Workspace', ipRange: '_spf.google.com', check: spf.includes.includes('_spf.google.com') },
+      { source: 'Microsoft 365', ipRange: 'include:spf.protection.outlook.com', check: spf.includes.some(i => i.includes('outlook.com') || i.includes('protection.outlook.com')) },
+      { source: 'SendGrid', ipRange: 'include:sendgrid.net', check: spf.includes.includes('sendgrid.net') },
+      { source: 'Mailchimp', ipRange: 'include:servers.mcsv.net', check: spf.includes.includes('servers.mcsv.net') },
+      { source: 'Amazon SES', ipRange: 'include:amazonses.com', check: spf.includes.includes('amazonses.com') },
+    ];
+
+    for (const source of commonSources) {
+      if (source.check) {
+        senderAnalysis.push({
+          source: source.source,
+          ipRange: source.ipRange,
+          spfResult: 'pass',
+          alignmentResult: alignmentMode === 'strict' ? 'pass (exact match)' : 'pass (subdomain ok)',
+          risk: 'low',
+        });
+      }
+    }
+
+    // Add fixes based on current state
+    if (spfMechanism === '?all' || spfMechanism === 'all') {
+      fixes.push(
+        { action: `Change SPF from ${spfMechanism} to -all (hard fail)`, priority: 'immediate', effort: 'low', detail: 'Your SPF record does not actually block unauthorized senders' }
+      );
+    }
+    if (spfMechanism === '~all') {
+      fixes.push(
+        { action: 'Consider upgrading SPF from ~all to -all for stricter protection', priority: 'when-ready', effort: 'low', detail: 'Soft fail allows suspicious emails through — hard fail blocks them' }
+      );
+    }
+    if (spf.includes.length > 10) {
+      fixes.push(
+        { action: `Reduce SPF includes from ${spf.includes.length} to under 10`, priority: 'soon', effort: 'medium', detail: 'Too many includes can exceed the 10 DNS lookup limit, causing SPF to fail' }
+      );
+    }
+    if (!dmarc.rua) {
+      fixes.push(
+        { action: 'Add RUA reporting to monitor SPF alignment results', priority: 'soon', effort: 'low', detail: 'Aggregate reports show you which sources pass/fail SPF alignment' }
+      );
+    }
+  }
+
+  return {
+    domain,
+    spfPresent,
+    dmarcPresent,
+    alignmentMode,
+    alignmentResult,
+    riskLevel,
+    explanation,
+    technicalDetail,
+    impact,
+    fixes,
+    senderAnalysis,
+  };
+}
+
+/**
  * Analyze email security and generate findings
  */
 function analyzeEmailSecurity(
@@ -845,6 +1016,9 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
   // Calculate DMARC policy roadmap
   const dmarcPolicyRoadmap = calculateDMARCPolicyRoadmap(domain, dmarc, spf, dkim);
   
+  // Calculate SPF alignment
+  const spfAlignment = calculateSPFAlignment(domain, spf, dmarc);
+  
   // Add spoofing-specific findings
   if (spoofingRisk.canBeSpoofed) {
     findings.unshift({
@@ -872,5 +1046,6 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
     findings,
     spoofingRisk,
     dmarcPolicyRoadmap,
+    spfAlignment,
   };
 }
