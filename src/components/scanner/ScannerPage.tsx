@@ -93,6 +93,19 @@ interface ScanResult {
       fixes: Array<{ action: string; priority: string; effort: string; detail: string }>;
       senderAnalysis: Array<{ source: string; ipRange: string; spfResult: string; alignmentResult: string; risk: string }>;
     };
+    dkimStrength?: {
+      domain: string;
+      configured: boolean;
+      selector: string | null;
+      keySize: number | null;
+      keyAlgorithm: string;
+      strengthGrade: string;
+      strengthLabel: string;
+      riskLevel: string;
+      explanation: string;
+      details: Array<{ label: string; value: string; status: string }>;
+      fixes: Array<{ action: string; priority: string; effort: string; detail: string }>;
+    };
   };
   virusTotal?: {
     domain: string;
@@ -873,6 +886,91 @@ export default function ScannerPage() {
                     </p>
                     <div className="space-y-2">
                       {result.emailSecurity.spfAlignment.fixes.map((f, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-dark-bg border border-dark-border">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                              f.priority === 'immediate' ? 'bg-red-500/20 text-red-400' :
+                              f.priority === 'soon' ? 'bg-amber-500/20 text-amber-400' :
+                              'bg-blue-500/20 text-blue-400'
+                            }`}>
+                              {f.priority}
+                            </span>
+                            <span className="text-[10px] text-brand-600">{f.effort} effort</span>
+                          </div>
+                          <p className="text-xs text-dark-text font-medium mb-1">{f.action}</p>
+                          <p className="text-[10px] text-brand-500">{f.detail}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* DKIM Key Strength Analysis */}
+            {result.emailSecurity?.dkimStrength && (
+              <div className="bg-dark-surface border border-dark-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold text-dark-text mb-3 font-[family-name:var(--font-display)]">
+                  DKIM Key Strength Analysis
+                </h3>
+                <p className="text-xs text-brand-500 mb-4">
+                  Evaluates your DKIM configuration, key size, and cryptographic strength.
+                </p>
+
+                {/* Grade Banner */}
+                <div className={`p-4 rounded-xl mb-4 ${
+                  result.emailSecurity.dkimStrength.riskLevel === 'good' ? 'bg-emerald-500/10 border border-emerald-500/20' :
+                  result.emailSecurity.dkimStrength.riskLevel === 'low' ? 'bg-blue-500/10 border border-blue-500/20' :
+                  result.emailSecurity.dkimStrength.riskLevel === 'medium' ? 'bg-amber-500/10 border border-amber-500/20' :
+                  'bg-red-500/10 border border-red-500/20'
+                }`}>
+                  <div className="flex items-center gap-4">
+                    <span className={`text-4xl font-bold font-[family-name:var(--font-display)] ${
+                      result.emailSecurity.dkimStrength.strengthGrade === 'A' ? 'text-emerald-400' :
+                      result.emailSecurity.dkimStrength.strengthGrade === 'B' ? 'text-blue-400' :
+                      result.emailSecurity.dkimStrength.strengthGrade === 'C' ? 'text-amber-400' :
+                      'text-red-400'
+                    }`}>
+                      {result.emailSecurity.dkimStrength.strengthGrade}
+                    </span>
+                    <div>
+                      <span className="text-sm font-semibold text-dark-text">{result.emailSecurity.dkimStrength.strengthLabel}</span>
+                      {result.emailSecurity.dkimStrength.keySize && (
+                        <span className="ml-2 text-xs text-brand-500">({result.emailSecurity.dkimStrength.keySize}-bit {result.emailSecurity.dkimStrength.keyAlgorithm})</span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-brand-400 mt-2">{result.emailSecurity.dkimStrength.explanation}</p>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {result.emailSecurity.dkimStrength.details.map((d, i) => (
+                    <div key={i} className={`p-2 rounded-lg border text-xs ${
+                      d.status === 'good' ? 'bg-emerald-500/5 border-emerald-500/10' :
+                      d.status === 'warning' ? 'bg-amber-500/5 border-amber-500/10' :
+                      d.status === 'bad' ? 'bg-red-500/5 border-red-500/10' :
+                      'bg-dark-bg border-dark-border'
+                    }`}>
+                      <span className="text-[10px] text-brand-600 uppercase">{d.label}</span>
+                      <p className={`font-medium ${
+                        d.status === 'good' ? 'text-emerald-400' :
+                        d.status === 'warning' ? 'text-amber-400' :
+                        d.status === 'bad' ? 'text-red-400' :
+                        'text-brand-400'
+                      }`}>{d.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Fixes */}
+                {result.emailSecurity.dkimStrength.fixes.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-brand-400 uppercase tracking-wider mb-2">
+                      Recommended Fixes ({result.emailSecurity.dkimStrength.fixes.length})
+                    </p>
+                    <div className="space-y-2">
+                      {result.emailSecurity.dkimStrength.fixes.map((f, i) => (
                         <div key={i} className="p-3 rounded-lg bg-dark-bg border border-dark-border">
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${

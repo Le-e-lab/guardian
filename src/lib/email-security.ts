@@ -94,6 +94,30 @@ export interface EmailSecurityResult {
   spoofingRisk: SpoofingRisk;
   dmarcPolicyRoadmap: DMARCPolicyRoadmap;
   spfAlignment: SPFAlignment;
+  dkimStrength: DKIMStrength;
+}
+
+export interface DKIMStrength {
+  domain: string;
+  configured: boolean;
+  selector: string | null;
+  keySize: number | null;
+  keyAlgorithm: string;
+  strengthGrade: 'A' | 'B' | 'C' | 'D' | 'F' | 'N/A';
+  strengthLabel: string;
+  riskLevel: 'good' | 'low' | 'medium' | 'high' | 'critical';
+  explanation: string;
+  details: Array<{
+    label: string;
+    value: string;
+    status: 'good' | 'warning' | 'bad' | 'info';
+  }>;
+  fixes: Array<{
+    action: string;
+    priority: 'immediate' | 'soon' | 'when-ready';
+    effort: 'low' | 'medium' | 'high';
+    detail: string;
+  }>;
 }
 
 export interface SPFAlignment {
@@ -841,6 +865,119 @@ function calculateSPFAlignment(
 }
 
 /**
+ * Calculate DKIM Key Strength
+ * Analyzes DKIM configuration, key size, algorithm, and overall health
+ */
+function calculateDKIMStrength(
+  domain: string,
+  dkim: EmailSecurityResult['dkim']
+): DKIMStrength {
+  const configured = dkim.present;
+  const selector = dkim.selector;
+  const keySize = dkim.keySize;
+
+  const details: DKIMStrength['details'] = [];
+  const fixes: DKIMStrength['fixes'] = [];
+
+  if (!configured) {
+    details.push(
+      { label: 'DKIM Status', value: 'Not configured', status: 'bad' },
+      { label: 'Selector', value: 'None found', status: 'bad' },
+      { label: 'Key Size', value: 'N/A', status: 'info' },
+    );
+    fixes.push(
+      { action: 'Enable DKIM in your email provider and publish the public key in DNS', priority: 'immediate', effort: 'low', detail: 'Without DKIM, emails have no digital signature and cannot be cryptographically verified' }
+    );
+  } else {
+    // DKIM is configured — analyze strength
+    details.push(
+      { label: 'DKIM Status', value: 'Configured', status: 'good' },
+      { label: 'Selector', value: selector || 'unknown', status: 'good' },
+    );
+
+    // Key size analysis
+    if (keySize) {
+      if (keySize >= 2048) {
+        details.push({ label: 'Key Size', value: `${keySize}-bit`, status: 'good' });
+      } else if (keySize >= 1024) {
+        details.push({ label: 'Key Size', value: `${keySize}-bit`, status: 'warning' });
+        fixes.push(
+          { action: 'Upgrade DKIM key from 1024-bit to 2048-bit', priority: 'soon', effort: 'medium', detail: '1024-bit RSA keys are considered weak by NIST. 2048-bit is the current standard.' }
+        );
+      } else {
+        details.push({ label: 'Key Size', value: `${keySize}-bit (insecure)`, status: 'bad' });
+        fixes.push(
+          { action: 'Upgrade DKIM key immediately — current key is cryptographically weak', priority: 'immediate', effort: 'medium', detail: 'Keys under 1024-bit can be factored by modern hardware' }
+        );
+      }
+    } else {
+      details.push({ label: 'Key Size', value: 'Unable to determine', status: 'info' });
+    }
+
+    // Check common weak selectors
+    const weakSelectors = ['default', 'google', 'selector1'];
+    if (selector && weakSelectors.includes(selector.toLowerCase())) {
+      details.push({ label: 'Selector', value: `${selector} (common)`, status: 'warning' });
+    }
+
+    // Check if key record looks like a valid DKIM record
+    const record = dkim.record || '';
+    if (record.includes('p=') && record.includes('v=DKIM1')) {
+      details.push({ label: 'Record Format', value: 'Valid DKIM record', status: 'good' });
+    } else if (record) {
+      details.push({ label: 'Record Format', value: 'Unusual format', status: 'warning' });
+    }
+  }
+
+  // Determine grade
+  let strengthGrade: DKIMStrength['strengthGrade'];
+  let strengthLabel: string;
+  let riskLevel: DKIMStrength['riskLevel'];
+  let explanation: string;
+
+  if (!configured) {
+    strengthGrade = 'F';
+    strengthLabel = 'No DKIM';
+    riskLevel = 'high';
+    explanation = `DKIM is not configured for ${domain}. Without DKIM, your emails have no digital signature. Recipients (Gmail, Outlook, etc.) cannot verify your emails are authentic, which hurts deliverability and makes spoofing easier.`;
+  } else if (keySize && keySize < 1024) {
+    strengthGrade = 'D';
+    strengthLabel = 'Weak Key';
+    riskLevel = 'high';
+    explanation = `DKIM is configured but uses a weak ${keySize}-bit key. This can be cracked by modern hardware. Upgrade to 2048-bit immediately.`;
+  } else if (keySize && keySize >= 1024 && keySize < 2048) {
+    strengthGrade = 'C';
+    strengthLabel = 'Adequate Key';
+    riskLevel = 'medium';
+    explanation = `DKIM is configured with a ${keySize}-bit key. This meets minimum security standards but NIST recommends 2048-bit or higher for new deployments.`;
+  } else if (keySize && keySize >= 2048) {
+    strengthGrade = 'A';
+    strengthLabel = 'Strong Key';
+    riskLevel = 'good';
+    explanation = `DKIM is configured with a strong ${keySize}-bit key. This provides excellent cryptographic protection for email signing.`;
+  } else {
+    strengthGrade = 'B';
+    strengthLabel = 'Configured';
+    riskLevel = 'low';
+    explanation = `DKIM is configured with selector "${selector || 'unknown'}". Key size could not be determined from DNS — this is common and usually means the key is valid.`;
+  }
+
+  return {
+    domain,
+    configured,
+    selector,
+    keySize,
+    keyAlgorithm: 'RSA', // Most common; ECDSA detection would need deeper inspection
+    strengthGrade,
+    strengthLabel,
+    riskLevel,
+    explanation,
+    details,
+    fixes,
+  };
+}
+
+/**
  * Analyze email security and generate findings
  */
 function analyzeEmailSecurity(
@@ -1019,6 +1156,9 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
   // Calculate SPF alignment
   const spfAlignment = calculateSPFAlignment(domain, spf, dmarc);
   
+  // Calculate DKIM strength
+  const dkimStrength = calculateDKIMStrength(domain, dkim);
+  
   // Add spoofing-specific findings
   if (spoofingRisk.canBeSpoofed) {
     findings.unshift({
@@ -1047,5 +1187,6 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
     spoofingRisk,
     dmarcPolicyRoadmap,
     spfAlignment,
+    dkimStrength,
   };
 }
