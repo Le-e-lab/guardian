@@ -430,6 +430,7 @@ export async function POST(request: NextRequest) {
         dmarcPolicyRoadmap: emailSecurity.dmarcPolicyRoadmap,
         spfAlignment: emailSecurity.spfAlignment,
         dkimStrength: emailSecurity.dkimStrength,
+        bimi: emailSecurity.bimi,
       } : null,
       // VirusTotal domain reputation
       virusTotal: virusTotal ? {

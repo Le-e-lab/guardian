@@ -95,6 +95,24 @@ export interface EmailSecurityResult {
   dmarcPolicyRoadmap: DMARCPolicyRoadmap;
   spfAlignment: SPFAlignment;
   dkimStrength: DKIMStrength;
+  bimi: BIMIResult;
+}
+
+export interface BIMIResult {
+  domain: string;
+  configured: boolean;
+  logoUrl: string | null;
+  vmcPresent: boolean;
+  riskLevel: 'good' | 'low' | 'medium' | 'high' | 'critical';
+  explanation: string;
+  benefits: string[];
+  prerequisites: Array<{ name: string; met: boolean; detail: string }>;
+  fixes: Array<{
+    action: string;
+    priority: 'immediate' | 'soon' | 'when-ready';
+    effort: 'low' | 'medium' | 'high';
+    detail: string;
+  }>;
 }
 
 export interface DKIMStrength {
@@ -978,6 +996,103 @@ function calculateDKIMStrength(
 }
 
 /**
+ * Check BIMI (Brand Indicators for Message Identification)
+ * Displays brand logo next to emails in supported inboxes
+ */
+async function checkBIMI(
+  domain: string,
+  dmarc: EmailSecurityResult['dmarc'],
+  spf: EmailSecurityResult['spf'],
+  dkim: EmailSecurityResult['dkim']
+): Promise<BIMIResult> {
+  // Look up BIMI record
+  let configured = false;
+  let logoUrl: string | null = null;
+  let vmcPresent = false;
+
+  try {
+    const records = await lookupTxtRecords(`default._bimi.${domain}`);
+    const bimiRecord = records.find(r => r.startsWith('v=BIMI1'));
+
+    if (bimiRecord) {
+      configured = true;
+      // Extract SVG URL
+      const lMatch = bimiRecord.match(/l=([^;]+)/);
+      if (lMatch) {
+        logoUrl = lMatch[1].trim();
+      }
+      // Check for VMC (Verified Mark Certificate)
+      const aMatch = bimiRecord.match(/a=([^;]+)/);
+      if (aMatch) {
+        vmcPresent = true;
+      }
+    }
+  } catch {
+    // BIMI lookup failed
+  }
+
+  // Check prerequisites
+  const hasDMARC = dmarc.present;
+  const dmarcEnforced = dmarc.policy === 'quarantine' || dmarc.policy === 'reject';
+  const hasSPF = spf.present;
+  const hasDKIM = dkim.present;
+
+  const prerequisites = [
+    { name: 'DMARC policy enforced (quarantine or reject)', met: dmarcEnforced, detail: dmarcEnforced ? `DMARC p=${dmarc.policy}` : 'Requires DMARC p=quarantine or p=reject' },
+    { name: 'SPF configured', met: hasSPF, detail: hasSPF ? 'SPF present' : 'Add SPF record' },
+    { name: 'DKIM configured', met: hasDKIM, detail: hasDKIM ? 'DKIM present' : 'Enable DKIM' },
+  ];
+
+  // Determine risk level
+  let riskLevel: BIMIResult['riskLevel'];
+  let explanation: string;
+  const fixes: BIMIResult['fixes'] = [];
+
+  if (configured) {
+    riskLevel = 'good';
+    explanation = `BIMI is configured for ${domain}. Your brand logo will display next to emails in supported inboxes (Gmail, Yahoo, Apple Mail).`;
+  } else if (!hasDMARC) {
+    riskLevel = 'high';
+    explanation = `BIMI requires DMARC to be configured first. Set up DMARC with p=quarantine or p=reject, then configure BIMI.`;
+    fixes.push(
+      { action: 'Configure DMARC with p=quarantine or p=reject first', priority: 'immediate', effort: 'low', detail: 'BIMI requires DMARC enforcement as a prerequisite' }
+    );
+  } else if (!dmarcEnforced) {
+    riskLevel = 'medium';
+    explanation = `DMARC is set to p=none. BIMI requires p=quarantine or p=reject. Move to p=quarantine to enable BIMI.`;
+    fixes.push(
+      { action: 'Move DMARC policy from p=none to p=quarantine', priority: 'soon', effort: 'low', detail: 'BIMI requires DMARC enforcement' },
+      { action: `Add BIMI record: default._bimi.${domain} → "v=BIMI1; l=https://${domain}/logo.svg"`, priority: 'when-ready', effort: 'medium', detail: 'Host your logo as an SVG and publish the BIMI DNS record' }
+    );
+  } else {
+    riskLevel = 'low';
+    explanation = `DMARC is enforced (p=${dmarc.policy}) but BIMI is not configured. Your domain is ready for BIMI — just publish the DNS record.`;
+    fixes.push(
+      { action: `Add BIMI record: default._bimi.${domain} → "v=BIMI1; l=https://${domain}/logo.svg"`, priority: 'soon', effort: 'medium', detail: 'Host your logo as an SVG and publish the BIMI DNS record' }
+    );
+  }
+
+  const benefits = [
+    'Brand logo displayed next to your emails in Gmail, Yahoo, Apple Mail',
+    'Increased trust — recipients can visually identify your brand',
+    'Higher open rates — branded emails get 10-15% more engagement',
+    'Protection against impersonation — logo only shows for authenticated senders',
+  ];
+
+  return {
+    domain,
+    configured,
+    logoUrl,
+    vmcPresent,
+    riskLevel,
+    explanation,
+    benefits,
+    prerequisites,
+    fixes,
+  };
+}
+
+/**
  * Analyze email security and generate findings
  */
 function analyzeEmailSecurity(
@@ -1159,6 +1274,24 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
   // Calculate DKIM strength
   const dkimStrength = calculateDKIMStrength(domain, dkim);
   
+  // Check BIMI
+  let bimi: BIMIResult;
+  try {
+    bimi = await checkBIMI(domain, dmarc, spf, dkim);
+  } catch {
+    bimi = {
+      domain,
+      configured: false,
+      logoUrl: null,
+      vmcPresent: false,
+      riskLevel: 'high',
+      explanation: 'BIMI check failed',
+      benefits: [],
+      prerequisites: [],
+      fixes: [],
+    };
+  }
+  
   // Add spoofing-specific findings
   if (spoofingRisk.canBeSpoofed) {
     findings.unshift({
@@ -1188,5 +1321,6 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
     dmarcPolicyRoadmap,
     spfAlignment,
     dkimStrength,
+    bimi,
   };
 }

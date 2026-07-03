@@ -166,6 +166,17 @@ interface ScanResult {
       details: Array<{ label: string; value: string; status: string }>;
       fixes: Array<{ action: string; priority: string; effort: string; detail: string }>;
     };
+    bimi?: {
+      domain: string;
+      configured: boolean;
+      logoUrl: string | null;
+      vmcPresent: boolean;
+      riskLevel: string;
+      explanation: string;
+      benefits: string[];
+      prerequisites: Array<{ name: string; met: boolean; detail: string }>;
+      fixes: Array<{ action: string; priority: string; effort: string; detail: string }>;
+    };
   };
   virusTotal?: {
     domain: string;
@@ -945,6 +956,101 @@ export default function ScanPage() {
                     </p>
                     <div className="space-y-2">
                       {result.emailSecurity.dkimStrength.fixes.map((f, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-white border border-brand-200/50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                              f.priority === 'immediate' ? 'bg-red-100 text-red-700' :
+                              f.priority === 'soon' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-blue-100 text-blue-700'
+                            }`}>
+                              {f.priority}
+                            </span>
+                            <span className="text-[10px] text-brand-500">{f.effort} effort</span>
+                          </div>
+                          <p className="text-xs text-brand-800 font-medium mb-1">{f.action}</p>
+                          <p className="text-[10px] text-brand-500">{f.detail}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* BIMI Record Check */}
+            {result.emailSecurity?.bimi && (
+              <div className="p-6 border-b border-brand-200/50">
+                <p className="text-xs text-brand-500 uppercase tracking-wider mb-3">BIMI — Brand Logo in Inbox</p>
+                <p className="text-xs text-brand-600 mb-4">
+                  Brand Indicators for Message Identification — display your logo next to emails in Gmail, Yahoo, and Apple Mail.
+                </p>
+
+                {/* Status Banner */}
+                <div className={`p-4 rounded-xl mb-4 ${
+                  result.emailSecurity.bimi.configured ? 'bg-green-50 border border-green-200' :
+                  result.emailSecurity.bimi.riskLevel === 'low' ? 'bg-blue-50 border border-blue-200' :
+                  'bg-yellow-50 border border-yellow-200'
+                }`}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className={`text-2xl font-bold font-[family-name:var(--font-display)] ${
+                      result.emailSecurity.bimi.configured ? 'text-green-600' :
+                      result.emailSecurity.bimi.riskLevel === 'low' ? 'text-blue-600' :
+                      'text-yellow-600'
+                    }`}>
+                      {result.emailSecurity.bimi.configured ? '✓ BIMI Active' :
+                       result.emailSecurity.bimi.riskLevel === 'low' ? '📋 Ready to Configure' :
+                       '⚠️ Not Configured'}
+                    </span>
+                    {result.emailSecurity.bimi.vmcPresent && (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-green-100 text-green-700">
+                        VMC Verified
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-brand-700">{result.emailSecurity.bimi.explanation}</p>
+                </div>
+
+                {/* Prerequisites */}
+                {result.emailSecurity.bimi.prerequisites.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-[10px] text-brand-500 uppercase tracking-wider mb-2 font-medium">Prerequisites</p>
+                    <div className="space-y-1.5">
+                      {result.emailSecurity.bimi.prerequisites.map((p, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <span className={`mt-0.5 ${p.met ? 'text-green-500' : 'text-red-500'}`}>
+                            {p.met ? '✓' : '✗'}
+                          </span>
+                          <span className={`text-xs ${p.met ? 'text-green-700' : 'text-red-700'}`}>
+                            {p.name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Benefits */}
+                {result.emailSecurity.bimi.benefits.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-[10px] text-brand-500 uppercase tracking-wider mb-2 font-medium">Benefits</p>
+                    <div className="space-y-1">
+                      {result.emailSecurity.bimi.benefits.map((b, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-brand-700">
+                          <span className="text-green-500 mt-0.5">✓</span> {b}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Fixes */}
+                {result.emailSecurity.bimi.fixes.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-brand-600 uppercase tracking-wider mb-2">
+                      How to Enable BIMI ({result.emailSecurity.bimi.fixes.length} steps)
+                    </p>
+                    <div className="space-y-2">
+                      {result.emailSecurity.bimi.fixes.map((f, i) => (
                         <div key={i} className="p-3 rounded-lg bg-white border border-brand-200/50">
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
