@@ -26,6 +26,38 @@ export interface SpoofingRisk {
   }>;
 }
 
+export interface DMARCPolicyStep {
+  stage: 'monitor' | 'quarantine' | 'reject' | 'complete';
+  title: string;
+  description: string;
+  timeline: string;
+  isCurrentStep: boolean;
+  isCompleted: boolean;
+  isLocked: boolean;
+  prerequisites: Array<{
+    name: string;
+    met: boolean;
+    detail: string;
+  }>;
+  dnsRecord: string; // The exact DNS record to set
+  validationChecks: Array<{
+    name: string;
+    description: string;
+    howToCheck: string;
+  }>;
+  risks: string[];
+  rollbackPlan: string;
+}
+
+export interface DMARCPolicyRoadmap {
+  currentPolicy: string | null;
+  currentStage: 'none' | 'monitor' | 'quarantine' | 'reject' | 'unknown';
+  recommendedNextStep: string;
+  estimatedTimeToFullProtection: string;
+  steps: DMARCPolicyStep[];
+  overallProgress: number; // 0-100
+}
+
 export interface EmailSecurityResult {
   domain: string;
   dmarc: {
@@ -60,6 +92,7 @@ export interface EmailSecurityResult {
   riskScore: number; // 0-100 (100 = most secure)
   findings: EmailFinding[];
   spoofingRisk: SpoofingRisk;
+  dmarcPolicyRoadmap: DMARCPolicyRoadmap;
 }
 
 export interface EmailFinding {
@@ -451,6 +484,192 @@ function calculateSpoofingRisk(
 }
 
 /**
+ * Generate DMARC Policy Roadmap
+ * Step-by-step guide from p=none → p=quarantine → p=reject
+ */
+function calculateDMARCPolicyRoadmap(
+  domain: string,
+  dmarc: EmailSecurityResult['dmarc'],
+  spf: EmailSecurityResult['spf'],
+  dkim: EmailSecurityResult['dkim']
+): DMARCPolicyRoadmap {
+  const currentPolicy = dmarc.policy;
+  
+  // Determine current stage
+  let currentStage: DMARCPolicyRoadmap['currentStage'];
+  if (!dmarc.present) currentStage = 'none';
+  else if (currentPolicy === 'none') currentStage = 'monitor';
+  else if (currentPolicy === 'quarantine') currentStage = 'quarantine';
+  else if (currentPolicy === 'reject') currentStage = 'reject';
+  else currentStage = 'unknown';
+
+  // Check prerequisites
+  const hasSPF = spf.present;
+  const hasDKIM = dkim.present;
+  const hasDMARC = dmarc.present;
+  const hasRUA = !!dmarc.rua;
+  const spfStrong = spf.mechanism === '-all';
+  const dkimKeyStrong = !dkim.keySize || dkim.keySize >= 1024;
+
+  // Build steps
+  const steps: DMARCPolicyStep[] = [];
+
+  // Step 1: Monitor (p=none)
+  const monitorPrereqs = [
+    { name: 'DMARC record published', met: hasDMARC, detail: hasDMARC ? 'DMARC record exists' : `Add _dmarc.${domain} TXT record` },
+    { name: 'SPF record configured', met: hasSPF, detail: hasSPF ? `SPF configured (${spf.mechanism || 'unknown'})` : `Add SPF record to ${domain}` },
+    { name: 'DKIM enabled', met: hasDKIM, detail: hasDKIM ? `DKIM configured (selector: ${dkim.selector || 'unknown'})` : 'Enable DKIM in your email provider' },
+    { name: 'RUA reporting configured', met: hasRUA, detail: hasRUA ? 'Aggregate reports enabled' : 'Add rua=mailto: to receive DMARC reports' },
+  ];
+
+  steps.push({
+    stage: 'monitor',
+    title: 'Step 1: Monitor (p=none)',
+    description: 'Set DMARC to p=none to collect data without affecting email delivery. This phase tells you WHO is sending email on behalf of your domain.',
+    timeline: '2-4 weeks',
+    isCurrentStep: currentStage === 'none' || currentStage === 'monitor',
+    isCompleted: currentStage === 'quarantine' || currentStage === 'reject',
+    isLocked: false,
+    prerequisites: monitorPrereqs,
+    dnsRecord: `v=DMARC1; p=none; rua=mailto:dmarc-reports@${domain}; sp=none`,
+    validationChecks: [
+      { name: 'Reports arriving', description: 'You receive weekly DMARC aggregate reports', howToCheck: 'Check your RUA email inbox for XML reports from Google, Microsoft, etc.' },
+      { name: 'Identify all senders', description: 'You can see all legitimate email sources in the reports', howToCheck: 'Open the XML report and look at <record> entries — each represents an email source' },
+      { name: 'No false positives', description: 'Legitimate email sources are not being flagged as failures', howToCheck: 'Check the <policy_evaluated> section — legitimate sources should show "pass"' },
+    ],
+    risks: [
+      'Your domain remains fully spoofable during this phase',
+      'Attackers can send phishing emails that look legitimate',
+      'You are only collecting data, not blocking anything',
+    ],
+    rollbackPlan: 'No rollback needed — p=none is the starting position and does not affect email delivery.',
+  });
+
+  // Step 2: Quarantine (p=quarantine)
+  const quarantinePrereqs = [
+    { name: 'Monitor phase complete', met: hasDMARC && currentPolicy !== 'none', detail: currentStage !== 'none' ? 'Monitor phase completed' : 'Complete 2-4 weeks of monitoring first' },
+    { name: 'All legitimate senders identified', met: hasRUA, detail: hasRUA ? 'You have reviewed DMARC reports' : 'Review DMARC aggregate reports to identify all legitimate email sources' },
+    { name: 'SPF aligned for all sources', met: spfStrong, detail: spfStrong ? 'SPF uses -all (hard fail)' : 'Update SPF to use -all instead of ~all' },
+    { name: 'No legitimate email failures', met: hasRUA, detail: hasRUA ? 'Verified in reports' : 'Check reports to ensure no legitimate email is failing authentication' },
+  ];
+
+  steps.push({
+    stage: 'quarantine',
+    title: 'Step 2: Quarantine (p=quarantine)',
+    description: 'Move to p=quarantine to send suspicious emails to spam. This blocks most spoofing while giving you a safety net if something breaks.',
+    timeline: '1-2 weeks',
+    isCurrentStep: currentStage === 'quarantine',
+    isCompleted: currentStage === 'reject',
+    isLocked: !hasDMARC || currentStage === 'none',
+    prerequisites: quarantinePrereqs,
+    dnsRecord: `v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@${domain}; sp=quarantine`,
+    validationChecks: [
+      { name: 'Spoofed emails go to spam', description: 'Test by checking that unauthorized sources are quarantined', howToCheck: 'Use a tool like mail-tester.com or send from an unauthorized server' },
+      { name: 'Legitimate email still delivers', description: 'Your normal business email arrives in inboxes', howToCheck: 'Send test emails from your normal email accounts and verify delivery' },
+      { name: 'Report shows reduced failures', description: 'Fewer authentication failures in aggregate reports', howToCheck: 'Compare this week\'s DMARC report to the previous week' },
+    ],
+    risks: [
+      'Some legitimate emails may go to spam if not properly authenticated',
+      'Third-party email services (marketing, transactional) may need SPF/DKIM updates',
+      'Recipients may not check spam folders for quarantined emails',
+    ],
+    rollbackPlan: 'Change DMARC policy back to p=none if legitimate emails are being quarantined. Fix the authentication issue, then re-enforce.',
+  });
+
+  // Step 3: Reject (p=reject)
+  const rejectPrereqs = [
+    { name: 'Quarantine phase validated', met: currentStage === 'reject' || currentStage === 'quarantine', detail: currentStage === 'reject' ? 'Reject phase active' : currentStage === 'quarantine' ? 'Quarantine phase validated' : 'Complete quarantine phase first' },
+    { name: 'No legitimate email in quarantine', met: hasRUA, detail: hasRUA ? 'Verified via reports' : 'Confirm no legitimate email is being quarantined' },
+    { name: 'All email sources authenticated', met: hasSPF && hasDKIM, detail: hasSPF && hasDKIM ? 'SPF + DKIM configured' : 'Ensure all email sources pass SPF or DKIM' },
+    { name: 'Subdomain policy set', met: !!dmarc.subdomainPolicy, detail: dmarc.subdomainPolicy ? `sp=${dmarc.subdomainPolicy}` : 'Add sp=reject to protect subdomains' },
+  ];
+
+  steps.push({
+    stage: 'reject',
+    title: 'Step 3: Reject (p=reject)',
+    description: 'Move to p=reject for maximum protection. All unauthorized emails are completely blocked — they will never reach any recipient.',
+    timeline: 'Permanent',
+    isCurrentStep: currentStage === 'reject',
+    isCompleted: false,
+    isLocked: currentStage === 'none' || currentStage === 'monitor' || currentStage === 'unknown',
+    prerequisites: rejectPrereqs,
+    dnsRecord: `v=DMARC1; p=reject; rua=mailto:dmarc-reports@${domain}; sp=reject; adkim=s; aspf=s`,
+    validationChecks: [
+      { name: 'Spoofed emails rejected', description: 'Unauthorized emails are completely blocked', howToCheck: 'Send from unauthorized server — should get bounce/rejection notice' },
+      { name: 'All business email delivers', description: 'Every legitimate email reaches inboxes', howToCheck: 'Test all email channels: marketing, transactional, internal' },
+      { name: 'No customer complaints', description: 'Recipients report normal email delivery', howToCheck: 'Monitor for any "email not received" reports over 2 weeks' },
+    ],
+    risks: [
+      'If misconfigured, ALL email from your domain could be rejected',
+      'Third-party services must be properly authenticated before this step',
+      'Recovery from misconfiguration can take hours to days',
+    ],
+    rollbackPlan: 'Immediately change DMARC policy back to p=quarantine if legitimate email is being rejected. Diagnose the authentication failure, fix it, then re-enforce.',
+  });
+
+  // Step 4: Complete
+  steps.push({
+    stage: 'complete',
+    title: 'Complete: Maximum Protection',
+    description: 'Your domain is fully protected against email spoofing. Monitor DMARC reports regularly and maintain your SPF/DKIM configuration.',
+    timeline: 'Ongoing',
+    isCurrentStep: currentStage === 'reject' && !!dmarc.subdomainPolicy,
+    isCompleted: false,
+    isLocked: currentStage !== 'reject',
+    prerequisites: [],
+    dnsRecord: '',
+    validationChecks: [
+      { name: 'Weekly report review', description: 'Check DMARC aggregate reports for anomalies', howToCheck: 'Set a weekly calendar reminder to review RUA reports' },
+      { name: 'Annual SPF audit', description: 'Verify SPF includes are still needed', howToCheck: 'Review all included domains and remove any that are no longer used' },
+      { name: 'DKIM key rotation', description: 'Rotate DKIM keys every 6-12 months', howToCheck: 'Generate new DKIM key, publish to DNS, update email provider' },
+    ],
+    risks: [],
+    rollbackPlan: 'Maintain monitoring. If issues arise, temporarily step back to p=quarantine while diagnosing.',
+  });
+
+  // Calculate overall progress
+  let progress = 0;
+  if (hasDMARC) progress += 10;
+  if (hasSPF) progress += 10;
+  if (hasDKIM) progress += 10;
+  if (currentPolicy === 'none') progress += 20;
+  if (currentPolicy === 'quarantine') progress += 50;
+  if (currentPolicy === 'reject') progress += 80;
+  if (currentPolicy === 'reject' && dmarc.subdomainPolicy) progress += 10;
+  if (hasRUA) progress += 5;
+  progress = Math.min(100, progress);
+
+  // Determine recommended next step
+  let recommendedNextStep: string;
+  let estimatedTime: string;
+  if (!hasDMARC) {
+    recommendedNextStep = 'Add a DMARC record with p=none to start monitoring';
+    estimatedTime = '4-6 weeks to full protection';
+  } else if (currentPolicy === 'none') {
+    recommendedNextStep = 'Review DMARC reports for 2-4 weeks, then move to p=quarantine';
+    estimatedTime = '3-5 weeks to full protection';
+  } else if (currentPolicy === 'quarantine') {
+    recommendedNextStep = 'Validate no legitimate email is quarantined, then move to p=reject';
+    estimatedTime = '1-3 weeks to full protection';
+  } else if (currentPolicy === 'reject' && !dmarc.subdomainPolicy) {
+    recommendedNextStep = 'Add sp=reject to protect subdomains';
+    estimatedTime = '1 week to complete';
+  } else {
+    recommendedNextStep = 'Your DMARC is fully configured. Monitor reports regularly.';
+    estimatedTime = 'Fully protected';
+  }
+
+  return {
+    currentPolicy,
+    currentStage,
+    recommendedNextStep,
+    estimatedTimeToFullProtection: estimatedTime,
+    steps,
+    overallProgress: progress,
+  };
+}
+
+/**
  * Analyze email security and generate findings
  */
 function analyzeEmailSecurity(
@@ -623,6 +842,9 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
   // Calculate spoofing risk
   const spoofingRisk = calculateSpoofingRisk(domain, dmarc, spf, dkim, mx);
   
+  // Calculate DMARC policy roadmap
+  const dmarcPolicyRoadmap = calculateDMARCPolicyRoadmap(domain, dmarc, spf, dkim);
+  
   // Add spoofing-specific findings
   if (spoofingRisk.canBeSpoofed) {
     findings.unshift({
@@ -649,5 +871,6 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
     riskScore,
     findings,
     spoofingRisk,
+    dmarcPolicyRoadmap,
   };
 }

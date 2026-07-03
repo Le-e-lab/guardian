@@ -59,6 +59,27 @@ interface ScanResult {
       };
       recommendations: Array<{ action: string; priority: string; effort: string; impact: string; }>;
     };
+    dmarcPolicyRoadmap?: {
+      currentPolicy: string | null;
+      currentStage: string;
+      recommendedNextStep: string;
+      estimatedTimeToFullProtection: string;
+      overallProgress: number;
+      steps: Array<{
+        stage: string;
+        title: string;
+        description: string;
+        timeline: string;
+        isCurrentStep: boolean;
+        isCompleted: boolean;
+        isLocked: boolean;
+        prerequisites: Array<{ name: string; met: boolean; detail: string }>;
+        dnsRecord: string;
+        validationChecks: Array<{ name: string; description: string; howToCheck: string }>;
+        risks: string[];
+        rollbackPlan: string;
+      }>;
+    };
   };
   virusTotal?: {
     domain: string;
@@ -593,6 +614,171 @@ export default function ScannerPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* DMARC Policy Roadmap */}
+            {result.emailSecurity?.dmarcPolicyRoadmap && (
+              <div className="bg-dark-surface border border-dark-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold text-dark-text mb-3 font-[family-name:var(--font-display)]">
+                  DMARC Policy Roadmap
+                </h3>
+                <p className="text-xs text-brand-500 mb-4">
+                  Step-by-step guide to fully protect your domain against email spoofing.
+                </p>
+
+                {/* Progress Bar */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-dark-text">Overall Progress</span>
+                    <span className="text-sm font-bold text-brand-400">{result.emailSecurity.dmarcPolicyRoadmap.overallProgress}%</span>
+                  </div>
+                  <div className="w-full bg-dark-bg rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all ${
+                        result.emailSecurity.dmarcPolicyRoadmap.overallProgress >= 80 ? 'bg-emerald-500' :
+                        result.emailSecurity.dmarcPolicyRoadmap.overallProgress >= 50 ? 'bg-amber-500' :
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${result.emailSecurity.dmarcPolicyRoadmap.overallProgress}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-[10px] text-brand-600">
+                      Current: <span className="font-medium text-brand-400">
+                        {result.emailSecurity.dmarcPolicyRoadmap.currentPolicy 
+                          ? `p=${result.emailSecurity.dmarcPolicyRoadmap.currentPolicy}` 
+                          : 'No DMARC'}
+                      </span>
+                    </span>
+                    <span className="text-[10px] text-brand-600">
+                      {result.emailSecurity.dmarcPolicyRoadmap.estimatedTimeToFullProtection}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Recommended Next Step */}
+                <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 mb-6">
+                  <p className="text-[10px] text-blue-400 uppercase tracking-wider mb-1 font-medium">Next Step</p>
+                  <p className="text-sm text-blue-300 font-medium">{result.emailSecurity.dmarcPolicyRoadmap.recommendedNextStep}</p>
+                </div>
+
+                {/* Steps Timeline */}
+                <div className="space-y-4">
+                  {result.emailSecurity.dmarcPolicyRoadmap.steps.map((step, i) => (
+                    <div key={i} className={`rounded-xl border overflow-hidden ${
+                      step.isCurrentStep ? 'border-blue-500/50 bg-blue-500/5' :
+                      step.isCompleted ? 'border-emerald-500/30 bg-emerald-500/5' :
+                      step.isLocked ? 'border-dark-border bg-dark-bg/50 opacity-60' :
+                      'border-dark-border bg-dark-bg'
+                    }`}>
+                      {/* Step Header */}
+                      <div className={`p-4 ${
+                        step.isCurrentStep ? 'bg-blue-500/10' :
+                        step.isCompleted ? 'bg-emerald-500/10' :
+                        ''
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                            step.isCompleted ? 'bg-emerald-500 text-white' :
+                            step.isCurrentStep ? 'bg-blue-500 text-white' :
+                            'bg-dark-surface text-brand-500 border border-dark-border'
+                          }`}>
+                            {step.isCompleted ? '✓' : i + 1}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-dark-text">{step.title}</span>
+                              {step.isCurrentStep && (
+                                <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-blue-500/20 text-blue-400">
+                                  Current
+                                </span>
+                              )}
+                              {step.isCompleted && (
+                                <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-500/20 text-emerald-400">
+                                  Done
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-brand-600 mt-0.5">Timeline: {step.timeline}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-brand-400 mt-2 ml-11">{step.description}</p>
+                      </div>
+
+                      {/* Expanded Content (current step only) */}
+                      {step.isCurrentStep && (
+                        <div className="p-4 border-t border-dark-border space-y-4">
+                          {/* Prerequisites */}
+                          {step.prerequisites.length > 0 && (
+                            <div>
+                              <p className="text-[10px] text-brand-600 uppercase tracking-wider mb-2 font-medium">Prerequisites</p>
+                              <div className="space-y-1.5">
+                                {step.prerequisites.map((p, j) => (
+                                  <div key={j} className="flex items-start gap-2">
+                                    <span className={`mt-0.5 ${p.met ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      {p.met ? '✓' : '✗'}
+                                    </span>
+                                    <div>
+                                      <span className={`text-xs font-medium ${p.met ? 'text-emerald-400' : 'text-red-400'}`}>
+                                        {p.name}
+                                      </span>
+                                      <p className="text-[10px] text-brand-600">{p.detail}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* DNS Record */}
+                          {step.dnsRecord && (
+                            <div>
+                              <p className="text-[10px] text-brand-600 uppercase tracking-wider mb-1 font-medium">DNS Record to Set</p>
+                              <pre className="p-2 rounded bg-dark-bg text-[10px] text-brand-400 font-mono overflow-x-auto border border-dark-border">
+                                _dmarc.{target} → &quot;{step.dnsRecord}&quot;
+                              </pre>
+                            </div>
+                          )}
+
+                          {/* Validation Checks */}
+                          <div>
+                            <p className="text-[10px] text-brand-600 uppercase tracking-wider mb-2 font-medium">How to Validate</p>
+                            <div className="space-y-1.5">
+                              {step.validationChecks.map((v, j) => (
+                                <div key={j} className="p-2 rounded bg-dark-bg border border-dark-border">
+                                  <span className="text-xs font-medium text-dark-text">{v.name}</span>
+                                  <p className="text-[10px] text-brand-500">{v.description}</p>
+                                  <p className="text-[10px] text-brand-600 italic mt-0.5">How: {v.howToCheck}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Risks */}
+                          {step.risks.length > 0 && (
+                            <div>
+                              <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-1 font-medium">Risks</p>
+                              <ul className="space-y-1">
+                                {step.risks.map((r, j) => (
+                                  <li key={j} className="flex items-start gap-1.5 text-[10px] text-amber-300">
+                                    <span className="mt-0.5">⚠</span> {r}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Rollback */}
+                          <div className="p-2 rounded bg-dark-surface border border-dark-border">
+                            <p className="text-[10px] text-brand-600 uppercase tracking-wider mb-0.5 font-medium">Rollback Plan</p>
+                            <p className="text-[10px] text-brand-400">{step.rollbackPlan}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

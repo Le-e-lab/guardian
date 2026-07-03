@@ -427,6 +427,7 @@ export async function POST(request: NextRequest) {
           effort: f.effort,
         })),
         spoofingRisk: emailSecurity.spoofingRisk,
+        dmarcPolicyRoadmap: emailSecurity.dmarcPolicyRoadmap,
       } : null,
       // VirusTotal domain reputation
       virusTotal: virusTotal ? {
