@@ -14,7 +14,7 @@ export default function Footer() {
               <span className="text-base font-bold tracking-tight font-[family-name:var(--font-display)]">GUARDIAN</span>
             </div>
             <p className="text-sm text-brand-600 leading-relaxed max-w-xs mb-3">
-              Africa-first AI-native offensive cyber validation platform. Built in Harare, deployed across the continent.
+              AI-powered cybersecurity compliance platform. Built in Harare, Zimbabwe.
             </p>
             <p className="text-xs text-brand-500">
               Designed &amp; Built by{' '}
@@ -46,21 +46,12 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Locations */}
+          {/* Location */}
           <div>
-            <h4 className="font-semibold text-brand-800 mb-4 text-sm">Presence</h4>
+            <h4 className="font-semibold text-brand-800 mb-4 text-sm">Location</h4>
             <ul className="space-y-2.5 text-sm text-brand-600">
               <li className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-500" /> Harare, Zimbabwe
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-400" /> Lagos, Nigeria
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-400" /> Nairobi, Kenya
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-300" /> Johannesburg, SA
               </li>
             </ul>
           </div>

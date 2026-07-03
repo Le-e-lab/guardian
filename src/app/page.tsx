@@ -96,10 +96,10 @@ export default function LandingPage() {
       <section className="border-y border-brand-200/50 bg-brand-100/30">
         <div className="max-w-6xl mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           {[
-            { value: '70%+', label: 'ZW firms lack basic cybersecurity', icon: Building2 },
             { value: '<60s', label: 'Full compliance scan', icon: Zap },
             { value: '$49', label: 'Enterprise security, per month', icon: CreditCard },
-            { value: 'R5bn+', label: 'Lost to cybercrime in SA alone', icon: AlertTriangle },
+            { value: 'Free', label: 'During beta — no card needed', icon: CheckCircle },
+            { value: '11', label: 'Scan modules in parallel', icon: Globe },
           ].map(({ value, label, icon: Icon }) => (
             <div key={label} className="text-center group">
               <Icon className="w-5 h-5 text-brand-400 mx-auto mb-2 group-hover:text-brand-500 transition-colors" />
@@ -203,10 +203,10 @@ function ZimbabweTab() {
           </h3>
           <div className="space-y-4 text-brand-600 leading-relaxed text-sm sm:text-base">
             <p>
-              <strong className="text-brand-800">EcoCash processes over 600 million transactions monthly</strong>. CBZ, Steward Bank, and NetOne are digitizing at speed. The Zimbabwe Stock Exchange is going electronic.
+              <strong className="text-brand-800">Zimbabwe&apos;s digital economy is growing fast.</strong> EcoCash, CBZ, Steward Bank, and NetOne are digitizing at speed. The Zimbabwe Stock Exchange is going electronic.
             </p>
             <p>
-              But <strong className="text-brand-800">70%+ of Zimbabwean firms lack basic cybersecurity</strong>. The tools to protect these systems cost $35,000-$250,000 per year — more than most companies&apos; entire IT budgets.
+              But <strong className="text-brand-800">most Zimbabwean firms lack basic cybersecurity</strong>. The tools to protect these systems cost $35,000-$250,000 per year — more than most companies&apos; entire IT budgets.
             </p>
             <p>
               <strong className="text-brand-800">Guardian changes the equation.</strong> Built in Harare by Elevate Value Partners, we deliver enterprise-grade compliance scanning at $49/month — because the cost of not doing it is measured in breached trust, stolen funds, and collapsed businesses.
@@ -227,10 +227,10 @@ function ZimbabweTab() {
             <p className="text-xs text-brand-500 uppercase tracking-widest mb-4 font-medium">Zimbabwe by the numbers</p>
             <div className="space-y-3">
               {[
-                { label: 'EcoCash registered accounts', value: '10M+' },
-                { label: 'Mobile money transactions/month', value: '700M+' },
-                { label: 'Organizations without a DPO', value: '62%' },
-                { label: 'Firms lacking basic cybersecurity', value: '70%+' },
+                { label: 'Western tool cost', value: '$35K+/yr' },
+                { label: 'Guardian monthly price', value: '$49' },
+                { label: 'Scan time', value: '<60 seconds' },
+                { label: 'Scan modules', value: '11' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between py-2 border-b border-brand-200/50 last:border-0">
                   <span className="text-sm text-brand-600">{label}</span>

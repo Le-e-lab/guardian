@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Zap, Lock, Globe, Brain, FileText, Users, Target, TrendingUp } from 'lucide-react';
+import { Shield, Zap, Lock, Globe, Brain, FileText, Target, TrendingUp } from 'lucide-react';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import SignInModal from '@/components/auth/SignInModal';
@@ -19,38 +19,33 @@ const FEATURES = [
   },
   {
     icon: Lock,
-    title: 'Data Sovereignty',
-    desc: 'Your scan data stays in Africa. No offshore processing. No foreign data centers. Compliant with Zimbabwe\'s Data Protection Act from day one.',
+    title: 'No Login Required',
+    desc: 'Scan any domain without creating an account. Free during beta. Your results are yours — we don\'t require sign-up to see your full report.',
   },
   {
     icon: Shield,
     title: 'African Threat Intelligence',
-    desc: 'EcoCash fraud, SIM swaps at Econet stores, USSD hijacking, BEC patterns — the attack playbook no Western scanner knows. Trained on African data.',
+    desc: 'EcoCash fraud, SIM swaps, USSD hijacking, BEC patterns — the attack playbook no Western scanner knows. Built with African threat context.',
   },
   {
     icon: FileText,
-    title: 'Executive-Ready Reports',
-    desc: 'One-click PDF export with executive summary, technical findings, attack paths, and prioritized remediation steps your board can act on.',
-  },
-  {
-    icon: Users,
-    title: 'Team Collaboration',
-    desc: 'Multi-user organizations with role-based access. Share findings, assign remediation tasks, track progress across your security team.',
+    title: 'Compliance Reports',
+    desc: 'Automated checks against Zimbabwe\'s Data Protection Act, POPIA, Kenya DPA, Nigeria NDPA, GDPR, and ISO 27001. See your compliance score instantly.',
   },
   {
     icon: Globe,
-    title: 'REST API & Integrations',
-    desc: 'Full API access for MSSP integration. Automate scans on a schedule, pull results into your SIEM, build custom dashboards on top of Sentari.',
+    title: 'Email Security Analysis',
+    desc: 'DMARC, SPF, and DKIM checks in every scan. See if your email is configured correctly or if spoofing is possible.',
   },
   {
     icon: Target,
-    title: 'Continuous Monitoring',
-    desc: 'Enterprise tier: schedule recurring scans, track risk score trends, get alerted when new exposures appear on your attack surface.',
+    title: 'Port & Service Scanning',
+    desc: 'Detects open ports, exposed services, and misconfigurations that attackers look for. Know exactly what\'s visible to the outside world.',
   },
   {
     icon: TrendingUp,
-    title: 'Compliance Templates',
-    desc: 'Pre-built report formats for Zimbabwe\'s Data Protection Act, POPIA, Kenya DPA, Nigeria NDPA, GDPR, and ISO 27001. Prove compliance in one click.',
+    title: 'Domain Reputation Check',
+    desc: 'VirusTotal integration checks if your domain has been flagged for malware, phishing, or suspicious activity across security vendors.',
   },
 ];
 

@@ -165,7 +165,7 @@ export default function PricingPage() {
                   <td className="px-5 py-3.5 text-brand-600">Zimbabwe</td>
                   <td className="px-5 py-3.5 text-brand-600">AI-native offensive validation</td>
                   <td className="px-5 py-3.5 text-brand-500 font-bold">Free (Beta)</td>
-                  <td className="px-5 py-3.5 text-brand-600 hidden sm:table-cell">Only platform that is both AI-native/offensive AND Africa-local/sovereign</td>
+                  <td className="px-5 py-3.5 text-brand-600 hidden sm:table-cell">Built for African compliance — POPIA, NDPA, Kenya DPA, Zimbabwe DPA</td>
                 </tr>
               </tbody>
             </table>

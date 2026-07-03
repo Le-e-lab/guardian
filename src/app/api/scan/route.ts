@@ -426,6 +426,7 @@ export async function POST(request: NextRequest) {
           remediation: f.remediation,
           effort: f.effort,
         })),
+        spoofingRisk: emailSecurity.spoofingRisk,
       } : null,
       // VirusTotal domain reputation
       virusTotal: virusTotal ? {

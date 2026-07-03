@@ -5,6 +5,7 @@ import { Shield, ArrowRight, Loader2, AlertTriangle, CheckCircle, XCircle, Globe
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import SignInModal from '@/components/auth/SignInModal';
+import FeedbackWidget from '@/components/FeedbackWidget';
 
 type ScanStatus = 'idle' | 'scanning' | 'done' | 'error' | 'requires_auth';
 
@@ -99,6 +100,25 @@ interface ScanResult {
       regulationSection: string;
       remediation: string;
     }>;
+    spoofingRisk?: {
+      canBeSpoofed: boolean;
+      riskLevel: string;
+      riskScore: number;
+      attackScenario: string;
+      attackVector: string;
+      impactDescription: string;
+      protectionStatus: {
+        dmarc: { status: string; detail: string };
+        spf: { status: string; detail: string };
+        dkim: { status: string; detail: string };
+      };
+      recommendations: Array<{
+        action: string;
+        priority: string;
+        effort: string;
+        impact: string;
+      }>;
+    };
   };
   virusTotal?: {
     domain: string;
@@ -460,6 +480,102 @@ export default function ScanPage() {
               </div>
             )}
 
+            {/* Spoofing Risk Calculator */}
+            {result.emailSecurity?.spoofingRisk && (
+              <div className={`p-6 border-b border-brand-200/50 ${
+                result.emailSecurity.spoofingRisk.canBeSpoofed ? 'bg-red-50/30' : 'bg-green-50/30'
+              }`}>
+                <p className="text-xs text-brand-500 uppercase tracking-wider mb-3">Email Spoofing Risk</p>
+                
+                {/* Verdict Banner */}
+                <div className={`p-4 rounded-xl mb-4 ${
+                  result.emailSecurity.spoofingRisk.riskLevel === 'protected' ? 'bg-green-50 border border-green-200' :
+                  result.emailSecurity.spoofingRisk.riskLevel === 'low' ? 'bg-blue-50 border border-blue-200' :
+                  result.emailSecurity.spoofingRisk.riskLevel === 'medium' ? 'bg-yellow-50 border border-yellow-200' :
+                  'bg-red-50 border border-red-200'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-3xl font-bold font-[family-name:var(--font-display)] ${
+                      result.emailSecurity.spoofingRisk.riskLevel === 'protected' ? 'text-green-600' :
+                      result.emailSecurity.spoofingRisk.riskLevel === 'low' ? 'text-blue-600' :
+                      result.emailSecurity.spoofingRisk.riskLevel === 'medium' ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {result.emailSecurity.spoofingRisk.riskLevel === 'protected' ? '🛡️ Protected' :
+                       result.emailSecurity.spoofingRisk.riskLevel === 'low' ? '✅ Low Risk' :
+                       result.emailSecurity.spoofingRisk.riskLevel === 'medium' ? '⚠️ Medium Risk' :
+                       result.emailSecurity.spoofingRisk.riskLevel === 'high' ? '🚨 High Risk' :
+                       '🚨 Critical — Can Be Spoofed'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-brand-700 mt-2">{result.emailSecurity.spoofingRisk.attackScenario}</p>
+                </div>
+
+                {/* Protection Status */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {[
+                    { name: 'DMARC', ...result.emailSecurity.spoofingRisk.protectionStatus.dmarc },
+                    { name: 'SPF', ...result.emailSecurity.spoofingRisk.protectionStatus.spf },
+                    { name: 'DKIM', ...result.emailSecurity.spoofingRisk.protectionStatus.dkim },
+                  ].map(({ name, status, detail }) => (
+                    <div key={name} className={`p-2 rounded-lg border text-xs ${
+                      status === 'enforced' ? 'bg-green-50 border-green-200' :
+                      status === 'configured' ? 'bg-blue-50 border-blue-200' :
+                      status === 'partial' ? 'bg-yellow-50 border-yellow-200' :
+                      'bg-red-50 border-red-200'
+                    }`}>
+                      <span className={`font-medium ${
+                        status === 'enforced' ? 'text-green-700' :
+                        status === 'configured' ? 'text-blue-700' :
+                        status === 'partial' ? 'text-yellow-700' :
+                        'text-red-700'
+                      }`}>{name}</span>
+                      <p className="text-[10px] text-brand-600 mt-0.5">{detail}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Attack Vector */}
+                <div className="p-3 rounded-lg bg-brand-50/50 border border-brand-200/50 mb-3">
+                  <p className="text-[10px] text-brand-500 uppercase tracking-wider mb-1 font-medium">How the attack works</p>
+                  <p className="text-xs text-brand-700">{result.emailSecurity.spoofingRisk.attackVector}</p>
+                </div>
+
+                {/* Impact */}
+                <div className="p-3 rounded-lg bg-orange-50/50 border border-orange-200/50 mb-3">
+                  <p className="text-[10px] text-orange-500 uppercase tracking-wider mb-1 font-medium">Business Impact</p>
+                  <p className="text-xs text-orange-700">{result.emailSecurity.spoofingRisk.impactDescription}</p>
+                </div>
+
+                {/* Recommendations */}
+                {result.emailSecurity.spoofingRisk.recommendations.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-brand-600 uppercase tracking-wider mb-2">
+                      How to fix ({result.emailSecurity.spoofingRisk.recommendations.length} steps)
+                    </p>
+                    <div className="space-y-2">
+                      {result.emailSecurity.spoofingRisk.recommendations.map((rec, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-white border border-brand-200/50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                              rec.priority === 'immediate' ? 'bg-red-100 text-red-700' :
+                              rec.priority === 'soon' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-blue-100 text-blue-700'
+                            }`}>
+                              {rec.priority}
+                            </span>
+                            <span className="text-[10px] text-brand-500">{rec.effort} effort</span>
+                          </div>
+                          <p className="text-xs text-brand-800 font-medium mb-1">{rec.action}</p>
+                          <p className="text-[10px] text-brand-500">{rec.impact}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* VirusTotal Domain Reputation */}
             {result.virusTotal && (
               <div className="p-6 border-b border-brand-200/50">
@@ -619,6 +735,9 @@ export default function ScanPage() {
           </div>
         </section>
       )}
+
+      {/* Feedback Widget — visible after scan or always */}
+      <FeedbackWidget pageUrl="/scan" scanTarget={result?.target} />
 
       <Footer />
       {showSignIn && <SignInModal onClose={() => setShowSignIn(false)} />}
