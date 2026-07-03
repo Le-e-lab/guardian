@@ -96,6 +96,7 @@ export interface EmailSecurityResult {
   spfAlignment: SPFAlignment;
   dkimStrength: DKIMStrength;
   bimi: BIMIResult;
+  mtaSts: MTASTSResult;
 }
 
 export interface BIMIResult {
@@ -107,6 +108,23 @@ export interface BIMIResult {
   explanation: string;
   benefits: string[];
   prerequisites: Array<{ name: string; met: boolean; detail: string }>;
+  fixes: Array<{
+    action: string;
+    priority: 'immediate' | 'soon' | 'when-ready';
+    effort: 'low' | 'medium' | 'high';
+    detail: string;
+  }>;
+}
+
+export interface MTASTSResult {
+  domain: string;
+  configured: boolean;
+  policy: string | null;
+  mxHosts: string[];
+  maxAge: number | null;
+  riskLevel: 'good' | 'low' | 'medium' | 'high' | 'critical';
+  explanation: string;
+  details: Array<{ label: string; value: string; status: string }>;
   fixes: Array<{
     action: string;
     priority: 'immediate' | 'soon' | 'when-ready';
@@ -1093,6 +1111,101 @@ async function checkBIMI(
 }
 
 /**
+ * Check MTA-STS (Mail Transfer Agent Strict Transport Security)
+ * Ensures mail servers use TLS encryption when delivering email
+ */
+async function checkMTASTS(domain: string): Promise<MTASTSResult> {
+  let configured = false;
+  let policy: string | null = null;
+  let mxHosts: string[] = [];
+  let maxAge: number | null = null;
+
+  try {
+    // Check for MTA-STS DNS record
+    const records = await lookupTxtRecords(`_mta-sts.${domain}`);
+    const stsRecord = records.find(r => r.startsWith('v=STSv1'));
+
+    if (stsRecord) {
+      configured = true;
+      const idMatch = stsRecord.match(/id=([^\s;]+)/);
+      policy = idMatch ? idMatch[1] : 'unknown';
+
+      // Fetch the MTA-STS policy file
+      try {
+        const policyUrl = `https://mta-sts.${domain}/.well-known/mta-sts.txt`;
+        const response = await fetch(policyUrl, { signal: AbortSignal.timeout(5000) });
+        if (response.ok) {
+          const text = await response.text();
+          const lines = text.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('mx:')) {
+              mxHosts.push(line.replace('mx:', '').trim());
+            } else if (line.startsWith('max_age:')) {
+              maxAge = parseInt(line.replace('max_age:', '').trim()) || null;
+            }
+          }
+        }
+      } catch {
+        // Policy fetch failed
+      }
+    }
+  } catch {
+    // MTA-STS lookup failed
+  }
+
+  const details: MTASTSResult['details'] = [];
+  const fixes: MTASTSResult['fixes'] = [];
+
+  if (configured) {
+    details.push(
+      { label: 'MTA-STS Status', value: 'Configured', status: 'good' },
+      { label: 'Policy ID', value: policy || 'unknown', status: 'good' },
+      { label: 'MX Hosts', value: mxHosts.length > 0 ? mxHosts.join(', ') : 'Not fetched', status: mxHosts.length > 0 ? 'good' : 'info' },
+      { label: 'Max Age', value: maxAge ? `${Math.floor(maxAge / 86400)} days` : 'Not set', status: maxAge ? 'good' : 'info' },
+    );
+  } else {
+    details.push(
+      { label: 'MTA-STS Status', value: 'Not configured', status: 'bad' },
+      { label: 'DNS Record', value: '_mta-sts.' + domain, status: 'bad' },
+      { label: 'Policy File', value: 'Not accessible', status: 'bad' },
+    );
+  }
+
+  let riskLevel: MTASTSResult['riskLevel'];
+  let explanation: string;
+
+  if (configured && mxHosts.length > 0) {
+    riskLevel = 'good';
+    explanation = `MTA-STS is configured and enforced for ${domain}. Incoming mail servers must use TLS when delivering email to your domain, preventing email interception.`;
+  } else if (configured) {
+    riskLevel = 'medium';
+    explanation = `MTA-STS DNS record exists but the policy file could not be fetched. MTA-STS may not be fully enforced.`;
+    fixes.push(
+      { action: 'Verify the MTA-STS policy file is accessible at https://mta-sts.' + domain + '/.well-known/mta-sts.txt', priority: 'soon', effort: 'low', detail: 'The policy file must be publicly accessible over HTTPS' }
+    );
+  } else {
+    riskLevel = 'high';
+    explanation = `MTA-STS is not configured for ${domain}. Without MTA-STS, mail servers can deliver email without TLS encryption, making it vulnerable to interception.`;
+    fixes.push(
+      { action: `Create MTA-STS DNS record: _mta-sts.${domain} → "v=STSv1; id=$(date +%s)"`, priority: 'soon', effort: 'low', detail: 'Publish an MTA-STS DNS TXT record' },
+      { action: `Create policy file at https://mta-sts.${domain}/.well-known/mta-sts.txt`, priority: 'soon', effort: 'medium', detail: 'Create a text file with: version: STSv1, mode: enforce, mx: your-mail-server.com, max_age: 86400' }
+    );
+  }
+
+  return {
+    domain,
+    configured,
+    policy,
+    mxHosts,
+    maxAge,
+    riskLevel,
+    explanation,
+    details,
+    fixes,
+  };
+}
+
+/**
  * Analyze email security and generate findings
  */
 function analyzeEmailSecurity(
@@ -1292,6 +1405,24 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
     };
   }
   
+  // Check MTA-STS
+  let mtaSts: MTASTSResult;
+  try {
+    mtaSts = await checkMTASTS(domain);
+  } catch {
+    mtaSts = {
+      domain,
+      configured: false,
+      policy: null,
+      mxHosts: [],
+      maxAge: null,
+      riskLevel: 'high',
+      explanation: 'MTA-STS check failed',
+      details: [],
+      fixes: [],
+    };
+  }
+  
   // Add spoofing-specific findings
   if (spoofingRisk.canBeSpoofed) {
     findings.unshift({
@@ -1322,5 +1453,6 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
     spfAlignment,
     dkimStrength,
     bimi,
+    mtaSts,
   };
 }

@@ -431,6 +431,7 @@ export async function POST(request: NextRequest) {
         spfAlignment: emailSecurity.spfAlignment,
         dkimStrength: emailSecurity.dkimStrength,
         bimi: emailSecurity.bimi,
+        mtaSts: emailSecurity.mtaSts,
       } : null,
       // VirusTotal domain reputation
       virusTotal: virusTotal ? {

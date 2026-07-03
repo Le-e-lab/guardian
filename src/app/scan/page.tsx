@@ -177,6 +177,17 @@ interface ScanResult {
       prerequisites: Array<{ name: string; met: boolean; detail: string }>;
       fixes: Array<{ action: string; priority: string; effort: string; detail: string }>;
     };
+    mtaSts?: {
+      domain: string;
+      configured: boolean;
+      policy: string | null;
+      mxHosts: string[];
+      maxAge: number | null;
+      riskLevel: string;
+      explanation: string;
+      details: Array<{ label: string; value: string; status: string }>;
+      fixes: Array<{ action: string; priority: string; effort: string; detail: string }>;
+    };
   };
   virusTotal?: {
     domain: string;
@@ -1051,6 +1062,77 @@ export default function ScanPage() {
                     </p>
                     <div className="space-y-2">
                       {result.emailSecurity.bimi.fixes.map((f, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-white border border-brand-200/50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                              f.priority === 'immediate' ? 'bg-red-100 text-red-700' :
+                              f.priority === 'soon' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-blue-100 text-blue-700'
+                            }`}>
+                              {f.priority}
+                            </span>
+                            <span className="text-[10px] text-brand-500">{f.effort} effort</span>
+                          </div>
+                          <p className="text-xs text-brand-800 font-medium mb-1">{f.action}</p>
+                          <p className="text-[10px] text-brand-500">{f.detail}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* MTA-STS Check */}
+            {result.emailSecurity?.mtaSts && (
+              <div className="p-6 border-b border-brand-200/50">
+                <p className="text-xs text-brand-500 uppercase tracking-wider mb-3">MTA-STS — Email Encryption in Transit</p>
+                <p className="text-xs text-brand-600 mb-4">
+                  Mail Transfer Agent Strict Transport Security — enforces TLS encryption when delivering email to your domain.
+                </p>
+
+                {/* Status Banner */}
+                <div className={`p-4 rounded-xl mb-4 ${
+                  result.emailSecurity.mtaSts.riskLevel === 'good' ? 'bg-green-50 border border-green-200' :
+                  result.emailSecurity.mtaSts.riskLevel === 'medium' ? 'bg-yellow-50 border border-yellow-200' :
+                  'bg-red-50 border border-red-200'
+                }`}>
+                  <span className={`text-2xl font-bold font-[family-name:var(--font-display)] ${
+                    result.emailSecurity.mtaSts.riskLevel === 'good' ? 'text-green-600' :
+                    result.emailSecurity.mtaSts.riskLevel === 'medium' ? 'text-yellow-600' :
+                    'text-red-600'
+                  }`}>
+                    {result.emailSecurity.mtaSts.configured ? '✓ MTA-STS Active' : '⚠️ Not Configured'}
+                  </span>
+                  <p className="text-sm text-brand-700 mt-2">{result.emailSecurity.mtaSts.explanation}</p>
+                </div>
+
+                {/* Details */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {result.emailSecurity.mtaSts.details.map((d, i) => (
+                    <div key={i} className={`p-2 rounded-lg border text-xs ${
+                      d.status === 'good' ? 'bg-green-50 border-green-200' :
+                      d.status === 'bad' ? 'bg-red-50 border-red-200' :
+                      'bg-brand-50 border-brand-200'
+                    }`}>
+                      <span className="text-[10px] text-brand-500 uppercase">{d.label}</span>
+                      <p className={`font-medium ${
+                        d.status === 'good' ? 'text-green-700' :
+                        d.status === 'bad' ? 'text-red-700' :
+                        'text-brand-700'
+                      }`}>{d.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Fixes */}
+                {result.emailSecurity.mtaSts.fixes.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-brand-600 uppercase tracking-wider mb-2">
+                      How to Enable MTA-STS ({result.emailSecurity.mtaSts.fixes.length} steps)
+                    </p>
+                    <div className="space-y-2">
+                      {result.emailSecurity.mtaSts.fixes.map((f, i) => (
                         <div key={i} className="p-3 rounded-lg bg-white border border-brand-200/50">
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
