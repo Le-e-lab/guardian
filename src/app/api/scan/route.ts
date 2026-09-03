@@ -17,7 +17,7 @@ import { calculateThreatLevel, generateContainmentStrategy, generateIncidentRepo
 import { runActiveScan, ActiveScanConfig } from '@/lib/active-scan';
 import { requireAuth, getAuthUser } from '@/lib/auth-middleware';
 import { isOffensiveScanningEnabled, hasOffensiveAccess } from '@/lib/feature-flags';
-import { detectBot, checkFreeScanLimit } from '@/lib/bot-detection';
+import { detectBot } from '@/lib/bot-detection';
 import { runComplianceCheck } from '@/lib/compliance-checker';
 import { runEmailSecurityCheck } from '@/lib/email-security';
 import { checkDomainReputation } from '@/lib/virustotal';
@@ -96,30 +96,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // AUTH: Try to get user, but allow 1 free scan per IP without login
+    // AUTH: Require a verified account to run a scan.
+    // This prevents abuse — anonymous users could otherwise point scans at
+    // third-party sites they don't own. Only authenticated users can scan.
     const user = await getAuthUser(request);
     let userRole: UserRole = 'public';
     let userId: string | null = null;
 
-    if (user) {
-      // Authenticated user — use their role
-      userRole = (user.role as UserRole) || 'free';
-      userId = user.id;
-    } else {
-      // Anonymous user — check if they've used their 1 free scan
-      const freeCheck = checkFreeScanLimit(clientIp);
-      if (!freeCheck.allowed) {
-        return NextResponse.json(
-          { 
-            error: 'Free scan limit reached. Sign in for more scans.',
-            requiresAuth: true,
-            upgradePrompt: 'Create a free account for 10 scans per day, or upgrade to Starter for unlimited scanning.',
-          },
-          { status: 401 }
-        );
-      }
-      userRole = 'public';
+    if (!user) {
+      return NextResponse.json(
+        {
+          error: 'Sign in to run a scan.',
+          requiresAuth: true,
+          upgradePrompt: 'Create a free account to scan a site you own or have permission to test.',
+        },
+        { status: 401 }
+      );
     }
+
+    // Authenticated user — use their role
+    userRole = (user.role as UserRole) || 'free';
+    userId = user.id;
 
     const guardrailConfig = GUARDRAIL_CONFIGS[userRole] || GUARDRAIL_CONFIGS.free;
 
@@ -130,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
     const cleanTarget = validation.clean;
 
-    // Check scan limits (authenticated users only — anonymous limited by checkFreeScanLimit above)
+    // Check scan limits (authenticated users only)
     if (userId) {
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { count: scansToday } = await supabaseAdmin
@@ -286,37 +283,20 @@ export async function POST(request: NextRequest) {
 
     cleanupExpiredData().catch(err => console.error('[RETENTION]', err));
 
-    // Run compliance check (always, regardless of tier)
-    let complianceData = null;
-    try {
-      complianceData = await runComplianceCheck(cleanTarget);
-    } catch (err) {
-      console.error('[COMPLIANCE] Check failed:', err);
-    }
-
-    // Run email security check
-    let emailSecurity = null;
-    try {
-      emailSecurity = await runEmailSecurityCheck(cleanTarget);
-    } catch (err) {
-      console.error('[EMAIL] Check failed:', err);
-    }
-
-    // Run VirusTotal domain reputation check
-    let virusTotal = null;
-    try {
-      virusTotal = await checkDomainReputation(cleanTarget);
-    } catch (err) {
-      console.error('[VT] Check failed:', err);
-    }
-
-    // Run port scan
-    let portScan = null;
-    try {
-      portScan = await runPortScan(cleanTarget);
-    } catch (err) {
-      console.error('[PORT] Scan failed:', err);
-    }
+    // Run the expensive post-scan checks (compliance, email, virus total, ports)
+    // in PARALLEL so the slowest one doesn't add to the total response time.
+    // ponytail: was sequential await-chain (~30s due to email security DNS lookups).
+    const [
+      { complianceData },
+      { emailSecurity },
+      { virusTotal },
+      { portScan },
+    ] = await Promise.all([
+      runComplianceCheck(cleanTarget).then(complianceData => ({ complianceData })).catch(err => { console.error('[COMPLIANCE] Check failed:', err); return { complianceData: null }; }),
+      runEmailSecurityCheck(cleanTarget).then(emailSecurity => ({ emailSecurity })).catch(err => { console.error('[EMAIL] Check failed:', err); return { emailSecurity: null }; }),
+      checkDomainReputation(cleanTarget).then(virusTotal => ({ virusTotal })).catch(err => { console.error('[VT] Check failed:', err); return { virusTotal: null }; }),
+      runPortScan(cleanTarget).then(portScan => ({ portScan })).catch(err => { console.error('[PORT] Scan failed:', err); return { portScan: null }; }),
+    ]);
 
     const threatLevel = calculateThreatLevel(allFindings);
 

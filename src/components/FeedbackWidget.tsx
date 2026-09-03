@@ -73,7 +73,7 @@ export default function FeedbackWidget({ pageUrl, scanTarget }: FeedbackWidgetPr
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-full shadow-lg shadow-brand-500/30 transition-all hover:scale-105 active:scale-95 text-sm font-semibold"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3 bg-accent-500 hover:bg-accent-600 text-white rounded-full shadow-lg shadow-brand-500/30 transition-all hover:scale-105 active:scale-95 text-sm font-semibold"
         aria-label="Give feedback"
       >
         <MessageSquare className="w-4 h-4" />
@@ -213,7 +213,7 @@ export default function FeedbackWidget({ pageUrl, scanTarget }: FeedbackWidgetPr
             <button
               type="submit"
               disabled={status === 'submitting' || !message.trim()}
-              className="w-full px-4 py-2.5 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white rounded-xl font-semibold text-sm transition-all inline-flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 bg-accent-500 hover:bg-accent-600 disabled:bg-brand-300 text-white rounded-xl font-semibold text-sm transition-all inline-flex items-center justify-center gap-2"
             >
               {status === 'submitting' ? (
                 <>Sending...</>

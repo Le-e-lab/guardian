@@ -42,6 +42,18 @@ export const DEMO_TARGETS: DemoTarget[] = [
     expectedFindings: ['Next.js detection', 'Edge network', 'Security headers'],
     difficulty: 'medium',
   },
+  {
+    domain: 'elevatevaluepartners.co.zw',
+    description: 'Elevate Value Partners — Harare web studio (live demo target)',
+    expectedFindings: ['Security headers analysis', 'Technology detection', 'SSL/TLS check', 'DNS security'],
+    difficulty: 'medium',
+  },
+  {
+    domain: 'tarisai.co.zw',
+    description: 'Tarisai — live demo target',
+    expectedFindings: ['Security headers analysis', 'Technology detection', 'SSL/TLS check', 'DNS security'],
+    difficulty: 'medium',
+  },
 ];
 
 /**

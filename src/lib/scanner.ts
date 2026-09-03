@@ -224,8 +224,10 @@ async function scanPorts(target: string): Promise<ReconResult> {
     { port: 8443, service: 'HTTPS-Alt' },
   ];
 
-  // Check ports via TCP connection attempts (parallel, fast timeout)
-  for (const { port, service } of portsToCheck) {
+  // Check ports in PARALLEL (was a serial for-await loop that took up to
+  // 10 × 1.5s = 15s). Each port has its own short timeout; run them all at once.
+  // ponytail: bounded to 10 common ports; expand the list if coverage matters.
+  await Promise.all(portsToCheck.map(async ({ port, service }) => {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 1500); // 1.5s timeout per port
@@ -254,7 +256,7 @@ async function scanPorts(target: string): Promise<ReconResult> {
     } catch {
       // Port closed or filtered - normal
     }
-  }
+  }));
 
   return {
     tool: 'port-scan',
@@ -479,12 +481,18 @@ async function scanSubdomains(target: string): Promise<ReconResult> {
 
   const discovered: Array<{ subdomain: string; ip: string | null }> = [];
 
-  // Check subdomains via DNS
-  for (const sub of commonSubs) {
+  // Check subdomains in PARALLEL (was serial for-await on 20 dns.google calls,
+  // often taking 15-25s). Each lookup has a short timeout to bound the total.
+  // ponytail: 20 common subdomains; expand if coverage matters.
+  await Promise.all(commonSubs.map(async (sub) => {
     try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3000);
       const response = await fetch(
-        `https://dns.google/resolve?name=${sub}.${target}&type=A`
+        `https://dns.google/resolve?name=${sub}.${target}&type=A`,
+        { signal: controller.signal }
       );
+      clearTimeout(timer);
       const data = await response.json();
 
       if (data.Answer && data.Answer.length > 0) {
@@ -503,9 +511,9 @@ async function scanSubdomains(target: string): Promise<ReconResult> {
         }
       }
     } catch {
-      // DNS lookup failed - subdomain doesn't exist
+      // DNS lookup failed or timed out — subdomain doesn't exist
     }
-  }
+  }));
 
   return {
     tool: 'subdomain-enum',

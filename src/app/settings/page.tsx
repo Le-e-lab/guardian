@@ -19,7 +19,6 @@ export default function SettingsPage() {
   
   // Profile fields
   const [fullName, setFullName] = useState('');
-  const [company, setCompany] = useState('');
   const [role, setRole] = useState('');
   const [subscriptionTier, setSubscriptionTier] = useState('');
   
@@ -46,7 +45,6 @@ export default function SettingsPage() {
     
     if (data) {
       setFullName(data.full_name || '');
-      setCompany(data.org_id || '');
       setRole(data.role || '');
       setSubscriptionTier(data.subscription_tier || 'free');
     }
@@ -122,7 +120,7 @@ export default function SettingsPage() {
         <div className="text-center">
           <Shield className="w-12 h-12 text-brand-400 mx-auto mb-4" />
           <p className="text-brand-600 mb-4">Please sign in to access settings.</p>
-          <a href="/dashboard" className="px-6 py-3 bg-brand-500 hover:bg-brand-600 rounded-xl text-sm font-semibold text-white transition-all">
+          <a href="/dashboard" className="px-6 py-3 bg-accent-500 hover:bg-accent-600 rounded-xl text-sm font-semibold text-white transition-all">
             Go to Dashboard
           </a>
         </div>
@@ -196,7 +194,7 @@ export default function SettingsPage() {
             <button
               onClick={handleSaveProfile}
               disabled={saving}
-              className="px-6 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-400 text-white rounded-xl text-sm font-semibold transition-all flex items-center gap-2"
+              className="px-6 py-3 bg-accent-500 hover:bg-accent-600 disabled:bg-brand-400 text-white rounded-xl text-sm font-semibold transition-all flex items-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Save Profile
@@ -236,7 +234,7 @@ export default function SettingsPage() {
             <button
               onClick={handleChangePassword}
               disabled={saving || !newPassword || !confirmPassword}
-              className="px-6 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-400 text-white rounded-xl text-sm font-semibold transition-all flex items-center gap-2"
+              className="px-6 py-3 bg-accent-500 hover:bg-accent-600 disabled:bg-brand-400 text-white rounded-xl text-sm font-semibold transition-all flex items-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
               Update Password

@@ -68,20 +68,17 @@ export function middleware(request: NextRequest) {
   // --- CORS for API routes ---
   if (pathname.startsWith('/api/')) {
     const origin = request.headers.get('origin');
-    const allowedOrigins = [
-      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-      'https://sentari-seven.vercel.app',
-      'https://sentari.vercel.app',
-    ];
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const allowedOrigins = [appUrl];
 
     // Handle preflight
     if (request.method === 'OPTIONS') {
       return new NextResponse(null, {
         status: 204,
         headers: {
-          'Access-Control-Allow-Origin': allowedOrigins.includes(origin || '') ? origin! : allowedOrigins[0],
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+          'Access-Control-Allow-Origin': allowedOrigins.includes(origin || '') ? origin! : appUrl,
+          'Access-Control-Allow-Methods': 'POST',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
           'Access-Control-Max-Age': '86400',
           'Access-Control-Allow-Credentials': 'true',
         },
@@ -110,19 +107,20 @@ export function middleware(request: NextRequest) {
     'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()'
   );
   
-  // Content Security Policy
+  // Content Security Policy — kept aligned with next.config.ts (no unsafe-eval)
   response.headers.set(
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com",
+      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://*.supabase.co https://api.groq.com https://api.openrouter.ai https://huggingface.co https://api.xposedornot.com",
+      "img-src 'self' data: https:",
+      "connect-src 'self' https://*.supabase.co https://*.supabase.in https://api.groq.com https://api-inference.huggingface.co https://api.github.com https://services.nvd.nist.gov https://cve.circl.lu https://api.abuseipdb.com https://www.virustotal.com https://api.shodan.io https://dns.google",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      "object-src 'none'",
     ].join('; ')
   );
 

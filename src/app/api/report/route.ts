@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getAuthUser } from '@/lib/auth-middleware';
+
+// HTML-escape untrusted values before embedding in report HTML (prevents XSS)
+function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,6 +18,12 @@ export async function POST(request: NextRequest) {
 
     if (!scanId) {
       return NextResponse.json({ error: 'Scan ID required' }, { status: 400 });
+    }
+
+    // Authorization: only the scan owner can view the report
+    const user = await getAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required. Please sign in.' }, { status: 401 });
     }
 
     // Fetch scan data
@@ -19,10 +36,11 @@ export async function POST(request: NextRequest) {
         scan_results (*)
       `)
       .eq('id', scanId)
+      .eq('created_by', user.id)
       .single();
 
     if (error || !target) {
-      return NextResponse.json({ error: 'Scan not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Scan not found or you do not have permission to view it' }, { status: 404 });
     }
 
     const analysis = target.ai_analysis?.[0] || null;
@@ -35,8 +53,8 @@ export async function POST(request: NextRequest) {
       ? 'text/html'  // Browser will handle PDF via print
       : 'text/html';
     const disposition = format === 'pdf'
-      ? `inline; filename="sentari-report-${target.target_url}-${Date.now()}.html"`
-      : `inline; filename="sentari-report-${target.target_url}-${Date.now()}.html"`;
+      ? `inline; filename="guardian-report-${esc(target.target_url)}-${Date.now()}.html"`
+      : `inline; filename="guardian-report-${esc(target.target_url)}-${Date.now()}.html"`;
 
     return new NextResponse(html, {
       headers: {
@@ -45,7 +63,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error('[REPORT] Error:', error);
+    return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 });
   }
 }
 
@@ -64,7 +83,7 @@ function generateReportHTML(target: Record<string, unknown>, vulns: Record<strin
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Guardian Threat Assessment Report - ${target.target_url}</title>
+  <title>Guardian Threat Assessment Report - ${esc(target.target_url)}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0A0E17; color: #F9FAFB; line-height: 1.6; }
@@ -126,7 +145,7 @@ function generateReportHTML(target: Record<string, unknown>, vulns: Record<strin
   <button class="pdf-btn no-print" onclick="window.print()">📥 Download PDF</button>
   <div class="container">
     <div class="header">
-      <div class="logo">SENTARI</div>
+      <div class="logo">GUARDIAN</div>
       <div class="subtitle">Cybersecurity Compliance for Zimbabwe</div>
     </div>
 
@@ -138,11 +157,11 @@ function generateReportHTML(target: Record<string, unknown>, vulns: Record<strin
       <div class="meta">
         <div class="meta-item">
           <div class="meta-label">Target</div>
-          <div class="meta-value">${target.target_url}</div>
+          <div class="meta-value">${esc(target.target_url)}</div>
         </div>
         <div class="meta-item">
           <div class="meta-label">Scan Mode</div>
-          <div class="meta-value">${target.scan_mode}</div>
+          <div class="meta-value">${esc(target.scan_mode)}</div>
         </div>
         <div class="meta-item">
           <div class="meta-label">Date</div>
@@ -190,21 +209,21 @@ function generateReportHTML(target: Record<string, unknown>, vulns: Record<strin
             const summary = parsed.risk_summary || parsed.summary || riskSummary || 'No analysis available';
             const criticals = parsed.critical_findings || [];
             const remediation = parsed.remediation_priority || [];
-            let html = '<p class="summary-text">' + summary + '</p>';
+            let html = '<p class="summary-text">' + esc(summary) + '</p>';
             if (criticals.length > 0) {
               html += '<div style="margin-top: 16px;"><strong style="color: #EF4444;">Critical Issues:</strong><ul style="margin-top: 8px; padding-left: 20px; color: #D1D5DB;">';
-              criticals.forEach((c: string) => { html += '<li style="margin-bottom: 4px;">' + c.replace(/^\[.*?\]\s*/, '') + '</li>'; });
+              criticals.forEach((c: string) => { html += '<li style="margin-bottom: 4px;">' + esc(c.replace(/^\[.*?\]\s*/, '')) + '</li>'; });
               html += '</ul></div>';
             }
             if (remediation.length > 0) {
               html += '<div style="margin-top: 16px;"><strong style="color: #10B981;">What To Do:</strong><ol style="margin-top: 8px; padding-left: 20px; color: #D1D5DB;">';
-              remediation.forEach((r: { action: string; why: string; effort: string }) => { html += '<li style="margin-bottom: 4px;"><strong>' + r.action + '</strong> — ' + r.why + ' <em style="color: #9CA3AF;">(' + r.effort + ' effort)</em></li>'; });
+              remediation.forEach((r: { action: string; why: string; effort: string }) => { html += '<li style="margin-bottom: 4px;"><strong>' + esc(r.action) + '</strong> — ' + esc(r.why) + ' <em style="color: #9CA3AF;">(' + esc(r.effort) + ' effort)</em></li>'; });
               html += '</ol></div>';
             }
             return html;
           }
         } catch { /* fall through */ }
-        return '<p class="summary-text">' + (String((analysis as Record<string, unknown>)?.risk_summary || '') || 'No analysis available') + '</p>';
+        return '<p class="summary-text">' + esc(String((analysis as Record<string, unknown>)?.risk_summary || '') || 'No analysis available') + '</p>';
       })()}
     </div>
 
@@ -228,12 +247,12 @@ function generateReportHTML(target: Record<string, unknown>, vulns: Record<strin
     <div class="section">
       <div class="section-title">Vulnerabilities (${vulns.length})</div>
       ${vulns.map((v: Record<string, unknown>) => `
-      <div class="vuln-item ${v.severity}">
+      <div class="vuln-item ${esc(v.severity)}">
         <div class="vuln-header">
-          <div class="vuln-title">${v.title}</div>
-          <div class="vuln-severity ${v.severity}">${v.severity}</div>
+          <div class="vuln-title">${esc(v.title)}</div>
+          <div class="vuln-severity ${esc(v.severity)}">${esc(v.severity)}</div>
         </div>
-        <div class="vuln-remediation">${v.remediation}</div>
+        <div class="vuln-remediation">${esc(v.remediation)}</div>
       </div>
       `).join('')}
     </div>

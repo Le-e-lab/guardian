@@ -98,7 +98,7 @@ export default function AuthButton() {
         <div className="absolute right-0 top-full mt-2 w-80 bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-2xl z-50">
           <div className="flex items-center gap-2 mb-3">
             <Shield className="w-5 h-5 text-cyan-400" />
-            <span className="text-sm font-medium text-white">Sign in to Sentari</span>
+            <span className="text-sm font-medium text-white">Sign in to Guardian</span>
           </div>
           <p className="text-xs text-slate-400 mb-4">We&apos;ll send you a magic link — no password needed.</p>
           <input

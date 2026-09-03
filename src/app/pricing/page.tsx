@@ -11,8 +11,8 @@ const TIERS = [
     name: 'Free',
     price: '$0',
     period: '/beta',
-    desc: 'Full access during beta. Feedback welcome.',
-    features: ['3 scans per month', 'All scanning modules', 'Compliance reports', 'AI-powered analysis', 'PDF export', 'Priority support'],
+    desc: 'Full access while we\'re in beta.',
+    features: ['Free scans for verified accounts', 'All core scanning checks', 'Risk score & fix list', 'Email security (DMARC/SPF/DKIM)', 'Compliance posture'],
     cta: 'Start Free Now',
     ctaLink: '/scan',
     highlighted: false,
@@ -22,7 +22,7 @@ const TIERS = [
     price: 'TBA',
     period: '/mo',
     desc: 'Coming after beta. Sign up to lock in rates.',
-    features: ['15 scans per day', 'Full recon + OSINT', 'AI threat analysis', 'Remediation steps', 'PDF report export', 'EcoCash payment'],
+    features: ['More scans per day', 'Full recon + subdomains', 'AI threat analysis', 'Remediation steps', 'Report export', 'EcoCash payment'],
     cta: 'Join Waitlist',
     ctaLink: '/',
     highlighted: true,
@@ -32,7 +32,7 @@ const TIERS = [
     price: 'TBA',
     period: '/mo',
     desc: 'Coming after beta. Sign up to lock in rates.',
-    features: ['50 scans per day', 'Everything in Starter', 'Attack path visualization', 'Credential leak check', 'Social media OSINT', 'REST API access'],
+    features: ['Higher scan limits', 'Everything in Starter', 'Raw output access', 'Credential leak check', 'Social media OSINT', 'REST API access'],
     cta: 'Join Waitlist',
     ctaLink: '/',
     highlighted: false,
@@ -42,7 +42,7 @@ const TIERS = [
     price: 'TBA',
     period: '/mo',
     desc: 'Coming after beta. Contact for early access.',
-    features: ['Unlimited scans', 'Everything in Professional', 'Active vulnerability testing', 'Continuous monitoring', 'Compliance templates', 'Dedicated support'],
+    features: ['Unlimited scans', 'Everything in Professional', 'Authorized active testing', 'Continuous monitoring', 'Compliance templates', 'Dedicated support'],
     cta: 'Contact Us',
     ctaLink: 'mailto:hello@guardian.dev',
     highlighted: false,
@@ -66,7 +66,7 @@ export default function PricingPage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-brand-100/40 via-surface to-surface" />
         <div className="relative z-10 max-w-4xl mx-auto px-6 pt-20 sm:pt-28 pb-16 text-center">
-          <p className="text-xs text-brand-500 uppercase tracking-widest mb-4 font-medium">// Pricing</p>
+          <p className="text-xs text-brand-500 uppercase tracking-widest mb-4 font-medium">{'// Pricing'}</p>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 font-[family-name:var(--font-display)]">
             Currently in <span className="gradient-text">Beta</span>
           </h1>
@@ -76,24 +76,26 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Competitor Comparison Pills */}
-      <section className="max-w-4xl mx-auto px-6 mb-12">
-        <p className="text-center text-xs text-brand-500 uppercase tracking-widest mb-4 font-medium">How we compare</p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {[
-            { label: 'Pentera', price: '$35K+/yr', active: false },
-            { label: 'XBOW', price: '$6K+/test', active: false },
-            { label: 'Cybervergent', price: 'Custom', active: false },
-            { label: 'Guardian', price: 'Beta (Free)', active: true },
-          ].map(({ label, price, active }) => (
-            <div key={label} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm border transition-all ${
-              active ? 'bg-brand-500 text-white border-brand-500 font-semibold shadow-lg shadow-brand-500/20' : 'bg-brand-100/50 text-brand-600 border-brand-200/50'
-            }`}>
-              <span>{label}</span>
-              <span className={`font-bold ${active ? '' : 'text-brand-800'}`}>{price}</span>
-              {active && <ArrowUpRight className="w-4 h-4" />}
-            </div>
-          ))}
+      {/* Competitor Comparison Pills (dark band) */}
+      <section className="dark-section border-y border-brand-900/40 py-10">
+        <div className="max-w-4xl mx-auto px-6">
+          <p className="text-center text-xs text-brand-400 uppercase tracking-widest mb-4 font-medium">How we compare</p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {[
+              { label: 'Pentera', price: '$35K+/yr', active: false },
+              { label: 'XBOW', price: '$6K+/test', active: false },
+              { label: 'Cybervergent', price: 'Custom', active: false },
+              { label: 'Guardian', price: 'Beta (Free)', active: true },
+            ].map(({ label, price, active }) => (
+              <div key={label} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm border transition-all ${
+                active ? 'bg-brand-500 text-white border-brand-500 font-semibold shadow-lg shadow-brand-500/30' : 'bg-surface/40 text-brand-400 border-brand-200/40'
+              }`}>
+                <span>{label}</span>
+                <span className={`font-bold ${active ? '' : 'text-brand-100'}`}>{price}</span>
+                {active && <ArrowUpRight className="w-4 h-4" />}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -102,7 +104,7 @@ export default function PricingPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {TIERS.map(({ name, price, period, desc, features, cta, ctaLink, highlighted }) => (
             <div key={name} className={`rounded-2xl p-6 border transition-all card-hover ${
-              highlighted ? 'bg-brand-500 text-white border-brand-500 shadow-lg shadow-brand-500/20 scale-[1.02]' : 'bg-brand-100/50 border-brand-200/50 hover:border-brand-300'
+              highlighted ? 'bg-brand-500 text-white border-brand-500 shadow-lg shadow-accent-500/25 scale-[1.02]' : 'bg-brand-100/50 border-brand-200/50 hover:border-brand-300'
             }`}>
               <h3 className={`font-semibold mb-1 ${highlighted ? 'text-white' : 'text-brand-800'}`}>{name}</h3>
               <p className={`text-xs mb-4 ${highlighted ? 'text-brand-200' : 'text-brand-600'}`}>{desc}</p>
@@ -163,13 +165,31 @@ export default function PricingPage() {
                 <tr className="bg-brand-500/5">
                   <td className="px-5 py-3.5 font-semibold text-brand-800">Guardian</td>
                   <td className="px-5 py-3.5 text-brand-600">Zimbabwe</td>
-                  <td className="px-5 py-3.5 text-brand-600">AI-native offensive validation</td>
+                  <td className="px-5 py-3.5 text-brand-600">Automated passive security scanning</td>
                   <td className="px-5 py-3.5 text-brand-500 font-bold">Free (Beta)</td>
                   <td className="px-5 py-3.5 text-brand-600 hidden sm:table-cell">Built for African compliance — POPIA, NDPA, Kenya DPA, Zimbabwe DPA</td>
                 </tr>
               </tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      {/* CTA — dark band */}
+      <section className="dark-section border-t border-brand-900/40">
+        <div className="max-w-3xl mx-auto px-6 py-16 sm:py-20 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-display)] text-brand-100 mb-4">
+            Try it free while we&apos;re in beta.
+          </h2>
+          <p className="text-brand-500 mb-8 max-w-xl mx-auto">
+            No card. No catch. Just a clear picture of what&apos;s exposed on your site.
+          </p>
+          <a
+            href="/scan"
+            className="px-8 py-3.5 bg-accent-500 hover:bg-accent-600 rounded-xl font-semibold text-white transition-all btn-brand inline-flex items-center gap-2"
+          >
+            Start a free scan
+          </a>
         </div>
       </section>
 

@@ -1358,14 +1358,24 @@ function analyzeEmailSecurity(
 export async function runEmailSecurityCheck(domain: string): Promise<EmailSecurityResult> {
   console.log(`[EMAIL] Checking email security for ${domain}`);
   
-  // Run all checks in parallel
-  const [dmarc, spf, dkim, mxRecords] = await Promise.all([
+  // Run the core DNS checks plus MTA-STS (which only needs the domain) in parallel.
+  // BIMI depends on dmarc/spf/dkim so it runs right after — it's a single fast DNS
+  // lookup, not the bottleneck.
+  // ponytail: was sequential (BIMI + MTA-STS awaited after the first Promise.all).
+  const [
+    dmarc,
+    spf,
+    dkim,
+    mxRecords,
+    mtaStsRaw,
+  ] = await Promise.all([
     checkDmarc(domain),
     checkSpf(domain),
     checkDkim(domain),
     lookupMxRecords(domain),
+    checkMTASTS(domain).catch(() => null),
   ]);
-  
+
   const mx: EmailSecurityResult['mx'] = {
     present: mxRecords.length > 0,
     records: mxRecords,
@@ -1387,7 +1397,7 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
   // Calculate DKIM strength
   const dkimStrength = calculateDKIMStrength(domain, dkim);
   
-  // Check BIMI
+  // BIMI check (depends on dmarc/spf/dkim which are now available)
   let bimi: BIMIResult;
   try {
     bimi = await checkBIMI(domain, dmarc, spf, dkim);
@@ -1405,23 +1415,18 @@ export async function runEmailSecurityCheck(domain: string): Promise<EmailSecuri
     };
   }
   
-  // Check MTA-STS
-  let mtaSts: MTASTSResult;
-  try {
-    mtaSts = await checkMTASTS(domain);
-  } catch {
-    mtaSts = {
-      domain,
-      configured: false,
-      policy: null,
-      mxHosts: [],
-      maxAge: null,
-      riskLevel: 'high',
-      explanation: 'MTA-STS check failed',
-      details: [],
-      fixes: [],
-    };
-  }
+  // MTA-STS — use the value from the parallel batch (or a safe fallback)
+  const mtaSts: MTASTSResult = mtaStsRaw ?? {
+    domain,
+    configured: false,
+    policy: null,
+    mxHosts: [],
+    maxAge: null,
+    riskLevel: 'high',
+    explanation: 'MTA-STS check failed',
+    details: [],
+    fixes: [],
+  };
   
   // Add spoofing-specific findings
   if (spoofingRisk.canBeSpoofed) {

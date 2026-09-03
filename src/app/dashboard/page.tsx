@@ -55,7 +55,7 @@ export default function DashboardPage() {
         <div className="text-center max-w-md px-6">
           <h2 className="text-xl font-semibold text-brand-200 mb-2 font-[family-name:var(--font-display)]">Sign in required</h2>
           <p className="text-brand-500 text-sm mb-6">You need to sign in to access the dashboard.</p>
-          <button onClick={() => setShowSignIn(true)} className="px-6 py-3 bg-brand-500 hover:bg-brand-600 rounded-xl text-sm font-semibold text-white transition-all btn-brand">
+          <button onClick={() => setShowSignIn(true)} className="px-6 py-3 bg-accent-500 hover:bg-accent-600 rounded-xl text-sm font-semibold text-white transition-all btn-brand">
             Sign In
           </button>
           <button onClick={() => router.push('/')} className="block mx-auto mt-3 text-xs text-brand-500 hover:text-brand-400 transition-colors">

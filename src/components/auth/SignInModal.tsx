@@ -68,7 +68,7 @@ export default function SignInModal({ onClose }: SignInModalProps) {
             </div>
             <div>
               <h3 className="font-semibold text-brand-800 font-[family-name:var(--font-display)]">
-                {mode === 'signin' ? 'Sign in to Sentari' : 'Create Account'}
+                {mode === 'signin' ? 'Sign in to Guardian' : 'Create Account'}
               </h3>
               <p className="text-xs text-brand-500">
                 {mode === 'signin' ? 'Enter your credentials' : 'Start your free trial'}
@@ -111,7 +111,7 @@ export default function SignInModal({ onClose }: SignInModalProps) {
         <button
           onClick={handleSignIn}
           disabled={loading || !email.trim() || !password.trim()}
-          className="w-full py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 rounded-xl text-sm font-semibold text-white transition-all btn-brand flex items-center justify-center gap-2"
+          className="w-full py-3 bg-accent-500 hover:bg-accent-600 disabled:bg-brand-300 rounded-xl text-sm font-semibold text-white transition-all btn-brand flex items-center justify-center gap-2"
         >
           {loading ? (
             <>

@@ -1,11 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, ArrowRight, Loader2, AlertTriangle, CheckCircle, XCircle, Globe, Lock } from 'lucide-react';
+import { ArrowRight, Loader2, AlertTriangle, CheckCircle, XCircle, Globe, Lock } from 'lucide-react';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import SignInModal from '@/components/auth/SignInModal';
 import FeedbackWidget from '@/components/FeedbackWidget';
+import { useAuth } from '@/lib/auth';
+import { createClient } from '@supabase/supabase-js';
+
+const createClientSupabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 type ScanStatus = 'idle' | 'scanning' | 'done' | 'error' | 'requires_auth';
 
@@ -207,6 +214,7 @@ interface ScanResult {
 }
 
 export default function ScanPage() {
+  const { user } = useAuth();
   const [showSignIn, setShowSignIn] = useState(false);
   const [domain, setDomain] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
@@ -215,13 +223,21 @@ export default function ScanPage() {
 
   const handleScan = async () => {
     if (!domain.trim()) return;
+    // Require an account — verify before scanning so anyone can't probe
+    // sites they don't own.
+    if (!user) {
+      setStatus('requires_auth');
+      setShowSignIn(true);
+      return;
+    }
     setStatus('scanning');
     setError('');
     setResult(null);
     try {
+      const { data: { session } } = await createClientSupabase.auth.getSession();
       const res = await fetch('/api/scan', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
         body: JSON.stringify({ target: domain.trim(), mode: 'passive' }),
       });
       const data = await res.json();
@@ -251,13 +267,13 @@ export default function ScanPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-brand-100/40 via-surface to-surface" />
         <div className="relative z-10 max-w-3xl mx-auto px-6 pt-16 sm:pt-24 pb-12 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-100 border border-brand-200 text-brand-600 text-xs font-medium mb-6">
-            <Lock className="w-3.5 h-3.5" /> Free — No login required
+            <Lock className="w-3.5 h-3.5" /> For sites you own
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.1] mb-4 font-[family-name:var(--font-display)]">
             Free Cybersecurity Scan
           </h1>
           <p className="text-base sm:text-lg text-brand-600 max-w-xl mx-auto mb-8">
-            Enter any domain to get an instant risk assessment. See your score in under 60 seconds.
+            Sign in, then enter any domain you own or have permission to test. We&apos;ll map what an attacker would see — about half a minute.
           </p>
 
           {/* Scan Input */}
@@ -278,7 +294,7 @@ export default function ScanPage() {
               <button
                 onClick={handleScan}
                 disabled={status === 'scanning' || !domain.trim()}
-                className="px-6 py-4 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-400 text-white rounded-xl font-semibold transition-all inline-flex items-center gap-2 whitespace-nowrap btn-brand"
+                className="px-6 py-4 bg-accent-500 hover:bg-accent-600 disabled:bg-brand-400 text-white rounded-xl font-semibold transition-all inline-flex items-center gap-2 whitespace-nowrap btn-brand"
               >
                 {status === 'scanning' ? (
                   <><Loader2 className="w-5 h-5 animate-spin" /> Scanning...</>
@@ -288,7 +304,7 @@ export default function ScanPage() {
               </button>
             </div>
             <p className="text-xs text-brand-500 mt-3">
-              3 free scans per month. No account needed. All features included.
+              {user ? 'Free scans for verified accounts.' : 'Sign in to verify you own the site before scanning.'}
             </p>
           </div>
         </div>
@@ -762,7 +778,7 @@ export default function ScanPage() {
                             <div>
                               <p className="text-[10px] text-brand-500 uppercase tracking-wider mb-1 font-medium">DNS Record to Set</p>
                               <pre className="p-2 rounded bg-brand-50 text-[10px] text-brand-700 font-mono overflow-x-auto border border-brand-200/50">
-                                _dmarc.{domain} → "{step.dnsRecord}"
+                                _dmarc.{domain} → {'"'}{step.dnsRecord}{'"'}
                               </pre>
                             </div>
                           )}
@@ -1251,7 +1267,7 @@ export default function ScanPage() {
                     </p>
                     <button
                       onClick={() => setShowSignIn(true)}
-                      className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-xs font-semibold transition-all"
+                      className="px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg text-xs font-semibold transition-all"
                     >
                       Sign In for Full Access
                     </button>
@@ -1278,12 +1294,12 @@ export default function ScanPage() {
         <section className="max-w-xl mx-auto px-6 pb-16">
           <div className="bg-white rounded-2xl border border-brand-200 p-8 text-center">
             <Lock className="w-10 h-10 text-brand-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-brand-800 mb-2">Free scan limit reached</h3>
-            <p className="text-sm text-brand-600 mb-6">{error}</p>
+            <h3 className="text-lg font-semibold text-brand-800 mb-2">Sign in to run a scan</h3>
+            <p className="text-sm text-brand-600 mb-6">We verify your account so scans are only run on sites you own or have permission to test.</p>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => setShowSignIn(true)}
-                className="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold text-sm transition-all"
+                className="px-6 py-3 bg-accent-500 hover:bg-accent-600 text-white rounded-xl font-semibold text-sm transition-all btn-brand"
               >
                 Sign In
               </button>

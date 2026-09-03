@@ -29,11 +29,11 @@ interface ModelResponse {
 
 // All available models across providers
 const ALL_MODELS: AIModel[] = [
-  // Groq (Free, fastest)
+  // Groq (Free, fastest) — verified working model IDs
   {
-    name: 'Llama 3.1 8B',
+    name: 'GPT OSS 20B (fastest)',
     provider: 'groq',
-    modelId: 'llama-3.1-8b-instant',
+    modelId: 'openai/gpt-oss-20b',
     baseUrl: 'https://api.groq.com/openai/v1',
     apiKey: process.env.GROQ_API_KEY || '',
     maxTokens: 2000,
@@ -41,9 +41,9 @@ const ALL_MODELS: AIModel[] = [
     priority: 1,
   },
   {
-    name: 'Llama 3.3 70B',
+    name: 'Qwen3 27B',
     provider: 'groq',
-    modelId: 'llama-3.3-70b-versatile',
+    modelId: 'qwen/qwen3.8-27b',
     baseUrl: 'https://api.groq.com/openai/v1',
     apiKey: process.env.GROQ_API_KEY || '',
     maxTokens: 2000,
@@ -51,24 +51,14 @@ const ALL_MODELS: AIModel[] = [
     priority: 2,
   },
   {
-    name: 'Llama 3.1 70B',
+    name: 'GPT OSS 120B',
     provider: 'groq',
-    modelId: 'llama-3.1-70b-versatile',
+    modelId: 'openai/gpt-oss-120b',
     baseUrl: 'https://api.groq.com/openai/v1',
     apiKey: process.env.GROQ_API_KEY || '',
     maxTokens: 2000,
     costPer1k: 0,
     priority: 3,
-  },
-  {
-    name: 'Gemma 2 9B',
-    provider: 'groq',
-    modelId: 'gemma2-9b-it',
-    baseUrl: 'https://api.groq.com/openai/v1',
-    apiKey: process.env.GROQ_API_KEY || '',
-    maxTokens: 2000,
-    costPer1k: 0,
-    priority: 4,
   },
   // OpenRouter (Cheap, many models)
   {
@@ -80,26 +70,6 @@ const ALL_MODELS: AIModel[] = [
     maxTokens: 2000,
     costPer1k: 0.55, // $0.55/1M input
     priority: 5,
-  },
-  {
-    name: 'Llama 3.1 8B (OR)',
-    provider: 'openrouter',
-    modelId: 'meta-llama/llama-3.1-8b-instruct:free',
-    baseUrl: 'https://openrouter.ai/api/v1',
-    apiKey: process.env.OPENROUTER_API_KEY || '',
-    maxTokens: 2000,
-    costPer1k: 0,
-    priority: 6,
-  },
-  {
-    name: 'Mistral 7B',
-    provider: 'openrouter',
-    modelId: 'mistralai/mistral-7b-instruct:free',
-    baseUrl: 'https://openrouter.ai/api/v1',
-    apiKey: process.env.OPENROUTER_API_KEY || '',
-    maxTokens: 2000,
-    costPer1k: 0,
-    priority: 7,
   },
   // HuggingFace (Free inference)
   {
@@ -121,7 +91,7 @@ const ALL_MODELS: AIModel[] = [
     apiKey: '',
     maxTokens: 2000,
     costPer1k: 0,
-    priority: 0, // Highest priority - local is best
+    priority: 9,
   },
 ];
 
@@ -173,11 +143,16 @@ Provide analysis as JSON.`;
   try {
     let response;
 
+    // Per-model hard timeout (guarantees a hung provider can't stall the whole scan)
+    const controller = new AbortController();
+    const modelTimer = setTimeout(() => controller.abort(), 12000);
+
     // Different API formats for each provider
     if (model.provider === 'ollama') {
       // Ollama uses its own API format
       response = await fetch(`${model.baseUrl}/api/chat`, {
         method: 'POST',
+        signal: controller.signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: model.modelId,
@@ -193,6 +168,7 @@ Provide analysis as JSON.`;
       // HuggingFace Inference API
       response = await fetch(`${model.baseUrl}/${model.modelId}`, {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Authorization': `Bearer ${model.apiKey}`,
           'Content-Type': 'application/json',
@@ -206,10 +182,10 @@ Provide analysis as JSON.`;
       // OpenAI-compatible (Groq, OpenRouter)
       response = await fetch(`${model.baseUrl}/chat/completions`, {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Authorization': `Bearer ${model.apiKey}`,
           'Content-Type': 'application/json',
-          ...(model.provider === 'openrouter' ? { 'HTTP-Referer': 'https://sentari.dev' } : {}),
         },
         body: JSON.stringify({
           model: model.modelId,
@@ -222,6 +198,8 @@ Provide analysis as JSON.`;
         }),
       });
     }
+
+    clearTimeout(modelTimer);
 
     if (!response || !response.ok) {
       throw new Error(`${model.name} failed: ${response?.status || 'no response'}`);

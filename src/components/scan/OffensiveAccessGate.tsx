@@ -124,7 +124,7 @@ export default function OffensiveAccessGate({
           <button
             onClick={handleRequestAccess}
             disabled={isLoading}
-            className="w-full px-4 py-3 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 rounded-xl font-semibold text-white transition-all inline-flex items-center justify-center gap-2"
+            className="w-full px-4 py-3 bg-accent-500 hover:bg-accent-600 disabled:opacity-50 rounded-xl font-semibold text-white transition-all inline-flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -185,7 +185,7 @@ export default function OffensiveAccessGate({
           <button
             onClick={handleVerifyOtp}
             disabled={otp.length !== 6 || isLoading}
-            className="w-full px-4 py-3 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 rounded-xl font-semibold text-white transition-all inline-flex items-center justify-center gap-2"
+            className="w-full px-4 py-3 bg-accent-500 hover:bg-accent-600 disabled:opacity-50 rounded-xl font-semibold text-white transition-all inline-flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -221,7 +221,7 @@ export default function OffensiveAccessGate({
               setStep('request');
               setError('');
             }}
-            className="w-full px-4 py-3 bg-brand-500 hover:bg-brand-600 rounded-xl font-semibold text-white transition-all"
+            className="w-full px-4 py-3 bg-accent-500 hover:bg-accent-600 rounded-xl font-semibold text-white transition-all"
           >
             Try Again
           </button>

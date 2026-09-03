@@ -2,36 +2,18 @@
 
 import { useState, useEffect, useRef } from 'react';
 import {
-  Shield, ArrowRight, Zap, Lock, CheckCircle, Target,
-  Globe, Brain, AlertTriangle, CreditCard, Smartphone, Radio,
-  Fingerprint, Building2, MapPin
+  Shield, ArrowRight, Zap, Lock, CheckCircle, Globe, MapPin
 } from 'lucide-react';
+import GuardianMark from '@/components/brand/GuardianMark';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import SignInModal from '@/components/auth/SignInModal';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function LandingPage() {
   const [activeTab, setActiveTab] = useState(0);
   const [showSignIn, setShowSignIn] = useState(false);
-  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ? { id: session.user.id, email: session.user.email || '' } : null);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
-      setUser(s?.user ? { id: s.user.id, email: s.user.email || '' } : null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
 
   useEffect(() => {
     const el = tabRefs.current[activeTab];
@@ -74,11 +56,11 @@ export default function LandingPage() {
             Cybersecurity compliance<br /><span className="gradient-text">for Zimbabwean businesses.</span>
           </h1>
           <p className="text-lg sm:text-xl text-brand-600 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-            AI-powered compliance scanning for Zimbabwe&apos;s data protection regulations. Automated assessments, audit-ready reports, and remediation guidance — all data sovereign.
+            Guardian scans your site the way an attacker would — then tells you, in plain language, what&apos;s exposed and how to fix it. Built around Zimbabwe&apos;s data protection law.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-            <button onClick={handleCTA} className="px-8 py-4 bg-brand-500 hover:bg-brand-600 rounded-full font-semibold text-white transition-all inline-flex items-center gap-2 shadow-lg shadow-brand-500/20 btn-brand">
-              Start Free Assessment <ArrowRight className="w-5 h-5" />
+            <button onClick={handleCTA} className="px-8 py-4 bg-accent-500 hover:bg-accent-600 rounded-full font-semibold text-white transition-all inline-flex items-center gap-2 shadow-lg shadow-accent-500/25 btn-brand">
+              Scan my website free <ArrowRight className="w-5 h-5" />
             </button>
             <a href="/pricing" className="px-8 py-4 bg-transparent border-2 border-brand-200 hover:border-brand-400 rounded-full font-semibold text-brand-700 transition-all inline-flex items-center gap-2">
               View Pricing
@@ -92,29 +74,29 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ==================== STATS BAR ==================== */}
-      <section className="border-y border-brand-200/50 bg-brand-100/30">
+      {/* ==================== STATS BAR (dark band) ==================== */}
+      <section className="dark-section border-y border-brand-900/40">
         <div className="max-w-6xl mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           {[
-            { value: '<60s', label: 'Full compliance scan', icon: Zap },
-            { value: '$49', label: 'Enterprise security, per month', icon: CreditCard },
-            { value: 'Free', label: 'During beta — no card needed', icon: CheckCircle },
-            { value: '11', label: 'Scan modules in parallel', icon: Globe },
+            { value: '~30s', label: 'Until your first report', icon: Zap },
+            { value: '6', label: 'Security checks per scan', icon: Globe },
+            { value: 'A-F', label: 'Clear risk grade', icon: Shield },
+            { value: '$0', label: 'For the first scan', icon: CheckCircle },
           ].map(({ value, label, icon: Icon }) => (
             <div key={label} className="text-center group">
-              <Icon className="w-5 h-5 text-brand-400 mx-auto mb-2 group-hover:text-brand-500 transition-colors" />
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-brand-500 font-[family-name:var(--font-display)]">{value}</div>
-              <div className="text-xs sm:text-sm text-brand-600 mt-1">{label}</div>
+              <Icon className="w-5 h-5 text-brand-400 mx-auto mb-2 group-hover:text-brand-300 transition-colors" />
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-brand-300 font-[family-name:var(--font-display)]">{value}</div>
+              <div className="text-xs sm:text-sm text-brand-500 mt-1">{label}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ==================== TABS ==================== */}
-      <section className="max-w-6xl mx-auto px-6 py-20 sm:py-24">
+      {/* ==================== TABS / PROBLEM ==================== */}
+      <section id="how-it-works" className="max-w-6xl mx-auto px-6 py-20 sm:py-24">
         <div className="text-center mb-10 reveal">
           <p className="text-xs text-brand-500 uppercase tracking-widest mb-3 font-medium">Why we exist</p>
-          <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-display)]">The problem we&apos;re solving</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-display)]">Zimbabwe digitizing fast, security lagging</h2>
         </div>
 
         <div className="flex justify-center mb-10 reveal">
@@ -135,46 +117,26 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ==================== TRUSTED BY ==================== */}
-      <section className="bg-brand-100/40 py-16 sm:py-20">
-        <div className="max-w-5xl mx-auto px-6 text-center reveal">
-          <p className="text-xs text-brand-500 uppercase tracking-widest mb-6 font-medium">Designed &amp; Built by</p>
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold font-[family-name:var(--font-display)] text-brand-800">Elevate Value Partners</span>
+      {/* ==================== QUOTE (dark band) ==================== */}
+      <section className="dark-section py-16 sm:py-20 border-y border-brand-900/40">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-accent-500/15 flex items-center justify-center mx-auto mb-6 text-accent-500">
+            <GuardianMark className="w-6 h-6" />
           </div>
-          <p className="text-brand-600 max-w-xl mx-auto mb-6">
-            Harare-based software studio building custom web apps, mobile apps, and AI solutions for startups and enterprises across Zimbabwe and Africa.
-          </p>
-          <a href="https://www.elevatevaluepartners.co.zw/" target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-surface rounded-full border border-brand-200/50 text-sm text-brand-600 font-medium hover:border-brand-400 hover:text-brand-700 transition-all">
-            Visit elevatevaluepartners.co.zw <ArrowRight className="w-3.5 h-3.5" />
-          </a>
-        </div>
-      </section>
-
-      {/* ==================== QUOTE ==================== */}
-      <section className="py-16 sm:py-20">
-        <div className="max-w-4xl mx-auto px-6 text-center reveal">
-          <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center mx-auto mb-6">
-            <Shield className="w-6 h-6 text-brand-500" />
-          </div>
-          <blockquote className="text-xl sm:text-2xl font-[family-name:var(--font-display)] text-brand-800 leading-relaxed mb-6">
-            &ldquo;Zimbabwe&apos;s businesses deserve to know where they stand — before an attacker does. We&apos;re building the shield.&rdquo;
+          <blockquote className="text-xl sm:text-2xl font-[family-name:var(--font-display)] text-brand-100 leading-relaxed mb-6">
+            &ldquo;Most local businesses aren&apos;t getting hacked because their stacks are fancy — they&apos;re getting hacked because nobody told them what was exposed. We tell them first.&rdquo;
           </blockquote>
-          <p className="text-brand-500 text-sm font-medium uppercase tracking-widest">Guardian Mission Statement</p>
+          <p className="text-brand-500 text-sm font-medium uppercase tracking-widest">Why Guardian exists</p>
         </div>
       </section>
 
       {/* ==================== CTA ==================== */}
       <section className="py-20 sm:py-24">
         <div className="max-w-4xl mx-auto px-6 text-center reveal">
-          <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-display)] mb-6">Ready to check your cybersecurity posture?</h2>
-          <p className="text-brand-600 text-lg mb-8 max-w-2xl mx-auto">Start with a free compliance assessment. See your score in under 60 seconds. Upgrade for full audit-ready reports.</p>
-          <button onClick={handleCTA} className="px-8 py-4 bg-brand-500 hover:bg-brand-600 rounded-full font-semibold text-white transition-all inline-flex items-center gap-2 shadow-lg shadow-brand-500/20 btn-brand text-lg">
-            Start Free Assessment <ArrowRight className="w-5 h-5" />
+          <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-display)] mb-6">Wondering what&apos;s actually exposed on your site?</h2>
+          <p className="text-brand-600 text-lg mb-8 max-w-2xl mx-auto">Sign in free, then run a scan. You&apos;ll get a plain-language report of your biggest security gaps in about half a minute.</p>
+          <button onClick={handleCTA} className="px-8 py-4 bg-accent-500 hover:bg-accent-600 rounded-full font-semibold text-white transition-all inline-flex items-center gap-2 shadow-lg shadow-accent-500/25 btn-brand text-lg">
+            Scan my website free <ArrowRight className="w-5 h-5" />
           </button>
         </div>
       </section>
@@ -197,7 +159,7 @@ function ZimbabweTab() {
     <div className="max-w-5xl mx-auto">
       <div className="grid md:grid-cols-5 gap-10 sm:gap-12 items-start">
         <div className="md:col-span-3">
-          <p className="text-xs text-brand-500 uppercase tracking-widest mb-3 font-medium">// Zimbabwe Cybersecurity</p>
+          <p className="text-xs text-brand-500 uppercase tracking-widest mb-3 font-medium">{'// Zimbabwe Cybersecurity'}</p>
           <h3 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-display)] mb-6 leading-tight">
             Zimbabwe&apos;s digital economy<br />deserves proper protection.
           </h3>
@@ -209,45 +171,39 @@ function ZimbabweTab() {
               But <strong className="text-brand-800">most Zimbabwean firms lack basic cybersecurity</strong>. The tools to protect these systems cost $35,000-$250,000 per year — more than most companies&apos; entire IT budgets.
             </p>
             <p>
-              <strong className="text-brand-800">Guardian changes the equation.</strong> Built in Harare by Elevate Value Partners, we deliver enterprise-grade compliance scanning at $49/month — because the cost of not doing it is measured in breached trust, stolen funds, and collapsed businesses.
+              <strong className="text-brand-800">Guardian changes the equation.</strong> Built in Harare, we get you a clear picture of your exposure in minutes — without a security team or a six-figure budget to run it.
             </p>
           </div>
           <div className="mt-8 flex items-center gap-4 p-5 bg-brand-100 rounded-xl border border-brand-200/50">
-            <div className="w-12 h-12 rounded-xl bg-brand-500 flex items-center justify-center flex-shrink-0">
-              <Shield className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-xl bg-accent-500/15 flex items-center justify-center flex-shrink-0 text-accent-500">
+              <GuardianMark className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-brand-800">Our founding belief</p>
-              <p className="text-sm text-brand-600">Every Zimbabwean business — from a Harare fintech to a Bulawayo manufacturer — deserves to know where it&apos;s exposed.</p>
+              <p className="text-sm font-semibold text-brand-800">What we believe</p>
+              <p className="text-sm text-brand-600">A Bulawayo manufacturer and a Harare fintech face the same risk — and deserve the same clear, honest answers about it.</p>
             </div>
           </div>
         </div>
         <div className="md:col-span-2">
           <div className="bg-brand-100 rounded-2xl p-6 border border-brand-200">
-            <p className="text-xs text-brand-500 uppercase tracking-widest mb-4 font-medium">Zimbabwe by the numbers</p>
-            <div className="space-y-3">
+            <p className="text-xs text-brand-500 uppercase tracking-widest mb-4 font-medium">What each scan checks</p>
+            <ul className="space-y-3 text-sm text-brand-700">
               {[
-                { label: 'Western tool cost', value: '$35K+/yr' },
-                { label: 'Guardian monthly price', value: '$49' },
-                { label: 'Scan time', value: '<60 seconds' },
-                { label: 'Scan modules', value: '11' },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between py-2 border-b border-brand-200/50 last:border-0">
-                  <span className="text-sm text-brand-600">{label}</span>
-                  <span className="text-sm font-bold text-brand-800 font-[family-name:var(--font-display)]">{value}</span>
-                </div>
+                { label: 'Security headers', detail: 'CSP, HSTS, clickjacking protection' },
+                { label: 'SSL/TLS & certificates', detail: 'Expiry, protocol strength, wildcards' },
+                { label: 'Email & DMARC/SPF/DKIM', detail: 'Can your domain be spoofed?' },
+                { label: 'Exposed files', detail: '/.env, /admin, /wp-config & more' },
+                { label: 'Open ports & subdomains', detail: 'What&apos;s reachable from outside' },
+              ].map(({ label, detail }) => (
+                <li key={label} className="flex items-start gap-3 pb-3 border-b border-brand-200/50 last:border-0 last:pb-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-500 mt-1.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-brand-800">{label}</p>
+                    <p className="text-xs text-brand-600">{detail}</p>
+                  </div>
+                </li>
               ))}
-            </div>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="bg-brand-100/50 rounded-xl p-4 text-center border border-brand-200/50">
-              <div className="text-xl sm:text-2xl font-bold text-sev-critical font-[family-name:var(--font-display)]">$35K+</div>
-              <div className="text-xs text-brand-600 mt-1">Min. cost of Western tools</div>
-            </div>
-            <div className="bg-brand-100/50 rounded-xl p-4 text-center border border-brand-200/50">
-              <div className="text-xl sm:text-2xl font-bold text-brand-500 font-[family-name:var(--font-display)]">$49</div>
-              <div className="text-xs text-brand-600 mt-1">Guardian monthly price</div>
-            </div>
+            </ul>
           </div>
         </div>
       </div>
@@ -301,7 +257,7 @@ function AfricaTab() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="text-center mb-10">
-        <p className="text-xs text-brand-500 uppercase tracking-widest mb-3 font-medium">// Compliance Across Africa</p>
+        <p className="text-xs text-brand-500 uppercase tracking-widest mb-3 font-medium">{'// Compliance Across Africa'}</p>
         <h3 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-display)] mb-4">
           One platform. Every African data protection law.
         </h3>
@@ -394,21 +350,21 @@ function WaitlistSection() {
   };
 
   return (
-    <section className="py-16 sm:py-20 bg-brand-50 border-y border-brand-200/50">
-      <div className="max-w-2xl mx-auto px-6 text-center reveal">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-500/10 border border-brand-200 text-brand-600 text-xs font-medium mb-6">
+    <section className="dark-section py-16 sm:py-20 border-t border-brand-900/40">
+      <div className="max-w-2xl mx-auto px-6 text-center">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-500/15 border border-brand-200 text-brand-400 text-xs font-medium mb-6">
           <Lock className="w-3.5 h-3.5" /> Early Access
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-display)] mb-4">
-          Be first to know when we launch.
+        <h2 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-display)] text-brand-100 mb-4">
+          Want us to watch over things for you?
         </h2>
-        <p className="text-brand-600 mb-8 max-w-lg mx-auto">
-          Join the waitlist for early access, founding partner pricing, and priority onboarding.
+        <p className="text-brand-500 mb-8 max-w-lg mx-auto">
+          Leave your email and we&apos;ll let you know when monitoring and reports are ready to use.
         </p>
 
         {status === 'success' ? (
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-green-800">
-            <CheckCircle className="w-8 h-8 mx-auto mb-3 text-green-500" />
+          <div className="bg-brand-500/15 border border-brand-200 rounded-2xl p-6 text-brand-100">
+            <CheckCircle className="w-8 h-8 mx-auto mb-3 text-brand-400" />
             <p className="font-semibold">{message}</p>
           </div>
         ) : (
@@ -418,14 +374,14 @@ function WaitlistSection() {
               placeholder="Your name (optional)"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white border border-brand-200 text-brand-800 placeholder:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
+              className="w-full px-4 py-3 rounded-xl bg-surface border border-brand-200 text-brand-100 placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
             />
             <input
               type="text"
               placeholder="Company (optional)"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white border border-brand-200 text-brand-800 placeholder:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
+              className="w-full px-4 py-3 rounded-xl bg-surface border border-brand-200 text-brand-100 placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
             />
             <div className="flex gap-2">
               <input
@@ -434,18 +390,18 @@ function WaitlistSection() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="flex-1 px-4 py-3 rounded-xl bg-white border border-brand-200 text-brand-800 placeholder:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
+                className="flex-1 px-4 py-3 rounded-xl bg-surface border border-brand-200 text-brand-100 placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
               />
               <button
                 type="submit"
                 disabled={status === 'submitting'}
-                className="px-6 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-400 text-white rounded-xl font-semibold transition-all text-sm whitespace-nowrap"
+                className="px-6 py-3 bg-accent-500 hover:bg-accent-600 disabled:opacity-50 text-white rounded-xl font-semibold transition-all text-sm whitespace-nowrap btn-brand"
               >
                 {status === 'submitting' ? 'Joining...' : 'Join Waitlist'}
               </button>
             </div>
             {status === 'error' && (
-              <p className="text-red-500 text-sm">{message}</p>
+              <p className="text-red-400 text-sm">{message}</p>
             )}
           </form>
         )}

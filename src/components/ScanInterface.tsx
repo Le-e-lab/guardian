@@ -118,7 +118,7 @@ export default function ScanInterface() {
         {showSignIn && (
           <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowSignIn(false)}>
             <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center gap-2 mb-1"><Shield className="w-5 h-5 text-cyan-400" /><span className="font-semibold text-white">Sign in to Sentari</span></div>
+              <div className="flex items-center gap-2 mb-1"><Shield className="w-5 h-5 text-cyan-400" /><span className="font-semibold text-white">Sign in to Guardian</span></div>
               <p className="text-xs text-slate-400 mb-4">Magic link — no password needed.</p>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSignIn()} placeholder="you@company.com" disabled={sending}
@@ -138,7 +138,7 @@ export default function ScanInterface() {
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
               <Shield className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-white">SENTARI</span>
+            <span className="text-lg font-bold tracking-tight text-white">GUARDIAN</span>
           </div>
           <button onClick={() => setShowSignIn(true)} className="px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg text-sm font-semibold text-white transition-all shadow-lg shadow-cyan-500/20">
             Sign In
@@ -194,7 +194,7 @@ export default function ScanInterface() {
         </div>
 
         <footer className="border-t border-slate-800 py-8 text-center text-sm text-slate-600">
-          Sentari — Africa-First AI-Native Threat Intelligence
+          Guardian — Africa-First AI-Native Threat Intelligence
         </footer>
       </div>
     );
@@ -216,7 +216,7 @@ export default function ScanInterface() {
       {showSignIn && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowSignIn(false)}>
           <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 mb-1"><Shield className="w-5 h-5 text-cyan-400" /><span className="font-semibold text-white">Sign in to Sentari</span></div>
+            <div className="flex items-center gap-2 mb-1"><Shield className="w-5 h-5 text-cyan-400" /><span className="font-semibold text-white">Sign in to Guardian</span></div>
             <p className="text-xs text-slate-400 mb-4">Magic link — no password needed.</p>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSignIn()} placeholder="you@company.com" disabled={sending}
@@ -237,7 +237,7 @@ export default function ScanInterface() {
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
               <Shield className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-white">SENTARI</span>
+            <span className="text-lg font-bold tracking-tight text-white">GUARDIAN</span>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => setShowHistory(!showHistory)}
@@ -413,7 +413,7 @@ export default function ScanInterface() {
       </main>
 
       <footer className="border-t border-slate-800/50 py-8 text-center text-xs text-slate-600">
-        Sentari — Africa-First AI-Native Threat Intelligence
+        Guardian — Africa-First AI-Native Threat Intelligence
       </footer>
     </div>
   );

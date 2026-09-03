@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Search, Shield, Zap, Lock, AlertTriangle, CheckCircle, XCircle,
   ChevronDown, Clock, Eye, Target, ArrowRight, Sparkles, ShieldCheck,
   ArrowLeft, User, LogOut, ChevronDown as ChevronDownIcon, Settings
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
+import GuardianMark from '@/components/brand/GuardianMark';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -154,7 +156,7 @@ const SEVERITY: Record<string, { bg: string; text: string; border: string; icon:
   info: { bg: 'bg-gray-500/10', text: 'text-gray-400', border: 'border-gray-500/20', icon: CheckCircle },
 };
 
-const DEMOS = ['example.com', 'httpbin.org', 'github.com', 'vercel.com', 'tryhackme.com'];
+const DEMOS = ['elevatevaluepartners.co.zw', 'tarisai.co.zw', 'example.com', 'httpbin.org', 'github.com'];
 
 export default function ScannerPage() {
   const [target, setTarget] = useState('');
@@ -246,9 +248,9 @@ export default function ScannerPage() {
         <div className="text-center">
           <Shield className="w-12 h-12 text-brand-500 mx-auto mb-4" />
           <p className="text-brand-300 mb-4">Please sign in to access the scanner.</p>
-          <a href="/" className="px-6 py-3 bg-brand-500 hover:bg-brand-600 rounded-full text-sm font-semibold text-white transition-all btn-brand inline-flex items-center gap-2">
+          <Link href="/" className="px-6 py-3 bg-accent-500 hover:bg-accent-600 rounded-full text-sm font-semibold text-white transition-all btn-brand inline-flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" /> Go to Home
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -260,12 +262,12 @@ export default function ScannerPage() {
       <header className="border-b border-dark-border bg-dark-bg/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <a href="/" className="flex items-center gap-3 group">
-              <div className="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center transition-transform group-hover:scale-105">
-                <Shield className="w-5 h-5 text-white" />
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="w-9 h-9 rounded-xl bg-accent-500 flex items-center justify-center transition-transform group-hover:scale-105">
+                <GuardianMark className="w-5 h-5" />
               </div>
               <span className="text-lg font-bold tracking-tight font-[family-name:var(--font-display)] text-dark-text">GUARDIAN</span>
-            </a>
+            </Link>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -360,9 +362,9 @@ export default function ScannerPage() {
                     <div>
                       <p className="text-sm font-semibold text-dark-text mb-1">Unlock full vulnerability details</p>
                       <p className="text-xs text-brand-500 mb-3">
-                        Showing {result.details.length} of {result.findings.total} findings. Upgrade to Starter ($49/mo) for complete remediation steps, evidence, and AI-powered attack path analysis.
+                        Showing {result.details.length} of {result.findings.total} findings. Full remediation steps and evidence are unlocked for every plan during beta.
                       </p>
-                      <a href="/pricing" className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-500 hover:bg-brand-600 rounded-lg text-xs font-semibold text-white transition-all">
+                      <a href="/pricing" className="inline-flex items-center gap-1.5 px-4 py-2 bg-accent-500 hover:bg-accent-600 rounded-lg text-xs font-semibold text-white transition-all">
                         View Plans <ArrowRight className="w-3 h-3" />
                       </a>
                     </div>
@@ -393,7 +395,7 @@ export default function ScannerPage() {
               <button
                 onClick={() => doScan()}
                 disabled={loading || !target.trim()}
-                className="px-8 py-4 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-800 rounded-xl font-semibold text-white transition-all flex items-center gap-2 shadow-lg shadow-brand-500/20 btn-brand"
+                className="px-8 py-4 bg-accent-500 hover:bg-accent-600 disabled:bg-brand-800 rounded-xl font-semibold text-white transition-all flex items-center gap-2 shadow-lg shadow-accent-500/25 btn-brand"
               >
                 {loading ? (
                   <>
@@ -472,8 +474,8 @@ export default function ScannerPage() {
                     <div className="bg-dark-bg/90 backdrop-blur-sm border border-dark-border rounded-xl px-6 py-4 text-center">
                       <Lock className="w-5 h-5 text-brand-500 mx-auto mb-2" />
                       <p className="text-sm font-semibold text-dark-text mb-1">AI analysis locked</p>
-                      <p className="text-xs text-brand-500 mb-3">{result.upgrade_prompt || 'Upgrade to Starter ($49/mo) to unlock AI-powered threat reasoning.'}</p>
-                      <a href="/pricing" className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-500 hover:bg-brand-600 rounded-lg text-xs font-semibold text-white transition-all">
+                      <p className="text-xs text-brand-500 mb-3">{result.upgrade_prompt || 'Full AI analysis is unlocked for every plan during beta.'}</p>
+                      <a href="/pricing" className="inline-flex items-center gap-1.5 px-4 py-2 bg-accent-500 hover:bg-accent-600 rounded-lg text-xs font-semibold text-white transition-all">
                         View Plans <ArrowRight className="w-3 h-3" />
                       </a>
                     </div>

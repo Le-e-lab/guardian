@@ -1,4 +1,5 @@
-import { Shield } from 'lucide-react';
+import Link from 'next/link';
+import GuardianMark from '@/components/brand/GuardianMark';
 
 export default function Footer() {
   return (
@@ -8,19 +9,13 @@ export default function Footer() {
           {/* Brand */}
           <div className="sm:col-span-2 md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
-                <Shield className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-lg bg-accent-500 flex items-center justify-center">
+                <GuardianMark className="w-5 h-5" />
               </div>
               <span className="text-base font-bold tracking-tight font-[family-name:var(--font-display)]">GUARDIAN</span>
             </div>
             <p className="text-sm text-brand-600 leading-relaxed max-w-xs mb-3">
               AI-powered cybersecurity compliance platform. Built in Harare, Zimbabwe.
-            </p>
-            <p className="text-xs text-brand-500">
-              Designed &amp; Built by{' '}
-              <a href="https://www.elevatevaluepartners.co.zw/" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-500 transition-colors">
-                Elevate Value Partners
-              </a>
             </p>
           </div>
 
@@ -32,6 +27,7 @@ export default function Footer() {
               <li><a href="/features" className="hover:text-brand-500 transition-colors">Features</a></li>
               <li><a href="/pricing" className="hover:text-brand-500 transition-colors">Pricing</a></li>
               <li><a href="/dashboard" className="hover:text-brand-500 transition-colors">Dashboard</a></li>
+              <li><a href="/scan" className="hover:text-brand-500 transition-colors">Free Scan</a></li>
             </ul>
           </div>
 
@@ -39,10 +35,8 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold text-brand-800 mb-4 text-sm">Company</h4>
             <ul className="space-y-2.5 text-sm text-brand-600">
-              <li><a href="/" className="hover:text-brand-500 transition-colors">Mission</a></li>
-              <li><a href="https://www.elevatevaluepartners.co.zw/about" target="_blank" rel="noopener noreferrer" className="hover:text-brand-500 transition-colors">About EVP</a></li>
-              <li><a href="https://www.elevatevaluepartners.co.zw/work" target="_blank" rel="noopener noreferrer" className="hover:text-brand-500 transition-colors">Portfolio</a></li>
-              <li><a href="https://www.elevatevaluepartners.co.zw/services" target="_blank" rel="noopener noreferrer" className="hover:text-brand-500 transition-colors">Services</a></li>
+              <li><Link href="/" className="hover:text-brand-500 transition-colors">Mission</Link></li>
+              <li><Link href="/#how-it-works" className="hover:text-brand-500 transition-colors">How we work</Link></li>
             </ul>
           </div>
 
@@ -62,9 +56,9 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Guardian. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-xs text-brand-500">
-            <span className="text-brand-400">Privacy</span>
-            <span className="text-brand-400">Terms</span>
-            <span className="text-brand-400">Security</span>
+            <a href="/tos" className="hover:text-brand-700 transition-colors">Privacy</a>
+            <a href="/tos" className="hover:text-brand-700 transition-colors">Terms</a>
+            <a href="/tos" className="hover:text-brand-700 transition-colors">Security</a>
           </div>
         </div>
       </div>

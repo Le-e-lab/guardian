@@ -9,43 +9,43 @@ import SignInModal from '@/components/auth/SignInModal';
 const FEATURES = [
   {
     icon: Zap,
-    title: 'Sub-60s Scan Time',
-    desc: 'Full external threat assessment in under a minute. Not hours. Not days. Real-time results when you need them.',
+    title: 'Results in about half a minute',
+    desc: 'A full external assessment in under a minute — not hours. Run it, watch it, act on it.',
   },
   {
     icon: Brain,
-    title: 'AI Attack Path Reasoning',
-    desc: 'Multi-model AI chains individual vulnerabilities into real attack paths — showing how an attacker would breach your network, not just listing CVEs.',
+    title: 'Plain-language AI summary',
+    desc: 'Each finding is weighed by severity and explained in normal language, with a prioritized fix list. No security degree required.',
   },
   {
     icon: Lock,
-    title: 'No Login Required',
-    desc: 'Scan any domain without creating an account. Free during beta. Your results are yours — we don\'t require sign-up to see your full report.',
+    title: 'For sites you own',
+    desc: 'Sign in to verify you own the site before scanning. We only run scans where you have the right to test.',
   },
   {
     icon: Shield,
-    title: 'African Threat Intelligence',
-    desc: 'EcoCash fraud, SIM swaps, USSD hijacking, BEC patterns — the attack playbook no Western scanner knows. Built with African threat context.',
+    title: 'Email security you can act on',
+    desc: 'DMARC, SPF, and DKIM checks in every scan. See if your domain can be spoofed — and exactly how to lock it down.',
   },
   {
     icon: FileText,
-    title: 'Compliance Reports',
-    desc: 'Automated checks against Zimbabwe\'s Data Protection Act, POPIA, Kenya DPA, Nigeria NDPA, GDPR, and ISO 27001. See your compliance score instantly.',
+    title: 'Compliance posture',
+    desc: 'Checks mapped to Zimbabwe\'s data protection law, POPIA, and other African frameworks, with a clear score and what to fix.',
   },
   {
     icon: Globe,
-    title: 'Email Security Analysis',
-    desc: 'DMARC, SPF, and DKIM checks in every scan. See if your email is configured correctly or if spoofing is possible.',
+    title: 'Security headers & SSL',
+    desc: 'CSP, HSTS, clickjacking protection, certificate expiry, and TLS strength — the basics attackers probe first.',
   },
   {
     icon: Target,
-    title: 'Port & Service Scanning',
-    desc: 'Detects open ports, exposed services, and misconfigurations that attackers look for. Know exactly what\'s visible to the outside world.',
+    title: 'Exposed files & ports',
+    desc: 'Detects open ports, exposed services, and sensitive paths like /.env that attackers look for.',
   },
   {
     icon: TrendingUp,
-    title: 'Domain Reputation Check',
-    desc: 'VirusTotal integration checks if your domain has been flagged for malware, phishing, or suspicious activity across security vendors.',
+    title: 'Subdomains at a glance',
+    desc: 'Finds hidden subdomains — including forgotten admin or staging environments that widen your attack surface.',
   },
 ];
 
@@ -59,7 +59,7 @@ export default function FeaturesPage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-brand-100/40 via-surface to-surface" />
         <div className="relative z-10 max-w-4xl mx-auto px-6 pt-20 sm:pt-28 pb-16 text-center">
-          <p className="text-xs text-brand-500 uppercase tracking-widest mb-4 font-medium">// Capabilities</p>
+          <p className="text-xs text-brand-500 uppercase tracking-widest mb-4 font-medium">{'// Capabilities'}</p>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 font-[family-name:var(--font-display)]">
             Everything you need.<br /><span className="gradient-text">Nothing you don&apos;t.</span>
           </h1>
@@ -81,6 +81,24 @@ export default function FeaturesPage() {
               <p className="text-sm text-brand-600 leading-relaxed">{desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* CTA — dark band */}
+      <section className="dark-section border-t border-brand-900/40">
+        <div className="max-w-3xl mx-auto px-6 py-16 sm:py-20 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-display)] text-brand-100 mb-4">
+            See what&apos;s exposed on your site.
+          </h2>
+          <p className="text-brand-500 mb-8 max-w-xl mx-auto">
+            Sign in and run a scan in about half a minute. Free while we&apos;re in beta.
+          </p>
+          <button
+            onClick={() => setShowSignIn(true)}
+            className="px-8 py-3.5 bg-accent-500 hover:bg-accent-600 rounded-xl font-semibold text-white transition-all btn-brand"
+          >
+            Start a free scan
+          </button>
         </div>
       </section>
 

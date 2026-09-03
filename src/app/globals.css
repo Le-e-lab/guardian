@@ -1,34 +1,46 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #FAF7F2;
-  --color-brand-100: #F5EFE6;
-  --color-brand-200: #EADECD;
-  --color-brand-300: #D4C4A8;
-  --color-brand-400: #BFA882;
-  --color-brand-500: #A88C74;
-  --color-brand-600: #8B7355;
-  --color-brand-700: #6B5A42;
-  --color-brand-800: #4A3D2E;
-  --color-brand-900: #2A221A;
+  /* ===== Guardian "Ink & Signal" — warm graphite neutrals + burnt-amber signal =====
+     Deliberately avoids the teal-on-navy and warm-beige AI security clichés.
+     One accent only (burnt amber). Neutrals carry the page. */
+  --color-brand-50: #F7F4F0;
+  --color-brand-100: #EFEAE3;
+  --color-brand-200: #DED5C9;
+  --color-brand-300: #BDB2A4;
+  --color-brand-400: #9B8F80;
+  --color-brand-500: #6E6256;
+  --color-brand-600: #524A41;
+  --color-brand-700: #3D3731;
+  --color-brand-800: #2A2622;
+  --color-brand-900: #1B1815;
 
-  --color-surface: #FDFBF7;
-  --color-surface-alt: #F5EFE6;
+  /* Burnt-amber signal — the single accent */
+  --color-accent-200: #F3C9A4;
+  --color-accent-300: #EDA56A;
+  --color-accent-400: #E8823A;
+  --color-accent-500: #D96A1F;
+  --color-accent-600: #B7531A;
+  --color-accent-700: #8F4317;
+
+  --color-surface: #FAF8F5;
+  --color-surface-alt: #EFEAE3;
   --color-surface-raised: #FFFFFF;
 
-  --color-dark-bg: #0F0E0C;
-  --color-dark-surface: #1A1814;
-  --color-dark-border: #2A2720;
-  --color-dark-text: #F5EFE6;
+  --color-dark-bg: #141210;
+  --color-dark-surface: #1E1B18;
+  --color-dark-border: #2C2823;
+  --color-dark-text: #F2EDE6;
 
-  --color-sev-critical: #DC2626;
-  --color-sev-high: #EA580C;
-  --color-sev-medium: #D97706;
-  --color-sev-low: #2563EB;
+  --color-sev-critical: #C62828;
+  --color-sev-high: #E05B1B;
+  --color-sev-medium: #C77A10;
+  --color-sev-low: #3B6FB0;
   --color-sev-info: #6B7280;
 
-  --font-display: 'Funnel Display', serif;
-  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Public Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 /* ========== ANIMATIONS ========== */
@@ -94,8 +106,8 @@
 }
 
 @keyframes borderGlow {
-  0%, 100% { border-color: rgba(168, 140, 116, 0.2); }
-  50% { border-color: rgba(168, 140, 116, 0.5); }
+  0%, 100% { border-color: rgba(217, 106, 31, 0.25); }
+  50% { border-color: rgba(217, 106, 31, 0.55); }
 }
 
 /* ========== UTILITY CLASSES ========== */
@@ -190,27 +202,27 @@
 /* ========== SELECTION ========== */
 
 ::selection {
-  background: rgba(168, 140, 116, 0.3);
+  background: rgba(217, 106, 31, 0.25);
 }
 
 /* ========== SCROLLBAR ========== */
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #D4C4A8; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #A88C74; }
+::-webkit-scrollbar-thumb { background: #8FCBDD; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #D96A1F; }
 
 /* ========== FOCUS ========== */
 
 *:focus-visible {
-  outline: 2px solid #A88C74;
+  outline: 2px solid #D96A1F;
   outline-offset: 2px;
 }
 
 /* ========== BASE STYLES ========== */
 
 body {
-  background: #FDFBF7;
+  background: #FAF8F5;
   color: #1A1A1A;
   font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
@@ -230,8 +242,38 @@ body::before {
 }
 
 /* Dark scrollbar for scanner pages */
-.dark ::-webkit-scrollbar-thumb { background: #2A2720; }
-.dark ::-webkit-scrollbar-thumb:hover { background: #A88C74; }
+.dark ::-webkit-scrollbar-thumb { background: #2C2823; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #D96A1F; }
+
+/* ========== DARK SECTION (alternating rhythm) ==========
+   A deliberate dark surface band that alternates with the light ones
+   across the landing page. Reads as one cohesive product (the scanner is
+   already dark), not a disconnected color jump. */
+.dark-section {
+  background:
+    radial-gradient(1200px 500px at 80% -10%, rgba(217, 106, 31, 0.14), transparent 60%),
+    radial-gradient(900px 400px at 10% 110%, rgba(232, 130, 58, 0.08), transparent 60%),
+    #141210;
+  color: #F2EDE6;
+}
+
+.dark-section .text-brand-800 { color: #F2EDE6; }
+.dark-section .text-brand-700 { color: #EBE3D8; }
+.dark-section .text-brand-600 { color: #D5C9BA; }
+.dark-section .text-brand-500 { color: #B7AA98; }
+.dark-section .text-brand-400 { color: #9B8F80; }
+.dark-section .text-sev-critical { color: #F08080; }
+
+.dark-section .bg-brand-100 { background: rgba(217, 106, 31, 0.14); }
+.dark-section .bg-brand-500 { background: #D96A1F; }
+.dark-section .border-brand-200 { border-color: rgba(217, 106, 31, 0.28); }
+.dark-section .border-brand-200\/50 { border-color: rgba(217, 106, 31, 0.20); }
+.dark-section .bg-surface { background: #1E1B18; }
+
+/* Buttons and interactive elements get a warm amber glow on dark */
+.dark-section .btn-brand {
+  box-shadow: 0 8px 24px rgba(217, 106, 31, 0.35);
+}
 
 /* ========== TAB INDICATOR ========== */
 
@@ -247,7 +289,7 @@ body::before {
 
 .btn-brand:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(168, 140, 116, 0.3);
+  box-shadow: 0 4px 12px rgba(217, 106, 31, 0.3);
 }
 
 .btn-brand:active {
@@ -262,26 +304,23 @@ body::before {
 
 .card-hover:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(168, 140, 116, 0.12);
+  box-shadow: 0 12px 32px rgba(217, 106, 31, 0.12);
 }
 
 /* ========== CODE BLOCK STYLING ========== */
 
 .code-inline {
   font-family: 'IBM Plex Mono', monospace;
-  background: rgba(168, 140, 116, 0.1);
+  background: rgba(217, 106, 31, 0.1);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.875em;
 }
 
-/* ========== GRADIENT TEXT ========== */
+/* ========== SIGNAL TEXT (solid accent emphasis — no gradient on large headers) ========== */
 
 .gradient-text {
-  background: linear-gradient(135deg, #A88C74, #6B5A42);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #D96A1F;
 }
 
 /* ========== SMOOTH SCROLL ========== */
@@ -294,11 +333,11 @@ html {
 /* ========== REFINED CARD DEPTH ========== */
 
 .card-depth {
-  box-shadow: 0 1px 3px rgba(168, 140, 116, 0.06), 0 4px 12px rgba(168, 140, 116, 0.04);
+  box-shadow: 0 1px 3px rgba(217, 106, 31, 0.06), 0 4px 12px rgba(217, 106, 31, 0.04);
 }
 
 .card-depth:hover {
-  box-shadow: 0 4px 12px rgba(168, 140, 116, 0.1), 0 12px 32px rgba(168, 140, 116, 0.08);
+  box-shadow: 0 4px 12px rgba(217, 106, 31, 0.1), 0 12px 32px rgba(217, 106, 31, 0.08);
 }
 
 /* ========== LINK UNDERLINE EFFECT ========== */
@@ -314,7 +353,7 @@ html {
   left: 0;
   width: 0;
   height: 1.5px;
-  background: #A88C74;
+  background: #D96A1F;
   transition: width 0.3s ease;
 }
 

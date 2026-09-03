@@ -87,15 +87,14 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">7. Free Tier Limitations</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">7. Account and Free Tier</h2>
             <p className="text-gray-700 leading-relaxed">
-              The free tier provides limited access for evaluation purposes. Free tier users:
+              A verified account is required to run scans, ensuring scans are only performed by the domain owner or with authorized permission. Free tier users during beta:
             </p>
             <ul className="list-disc pl-6 text-gray-700 space-y-2 mt-2">
-              <li>Receive 1 free scan per month</li>
-              <li>See limited results (risk score and finding count only)</li>
-              <li>Do not have access to detailed remediation or AI analysis</li>
-              <li>Data is retained for 24 hours only</li>
+              <li>Run scans on domains they own or have permission to test</li>
+              <li>See their risk score, findings, and remediation guidance</li>
+              <li>Have data retained for a limited period per their plan</li>
             </ul>
           </section>
 
