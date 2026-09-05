@@ -45,11 +45,36 @@ export async function getAuthUser(request: NextRequest): Promise<AuthUser | null
     if (error || !user) return null;
 
     // Get profile with role and subscription info
-    const { data: profile } = await supabaseAdmin
+    const { data: existingProfile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role, org_id, subscription_tier, is_super_admin')
       .eq('id', user.id)
       .single();
+    let profile = existingProfile;
+
+    // Self-healing guard: if an authenticated user has no profile row,
+    // create one on the fly. scan_targets.created_by has an FK to
+    // profiles(id) — a missing profile makes every scan fail with 23503
+    // ("Failed to create scan" / 500), which bit all pre-2026-09-05 users
+    // because the new-user trigger never backfills existing accounts.
+    if ((profileError || !profile) && user.email) {
+      const { data: created, error: insertError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: user.id,
+          full_name: (user.user_metadata?.full_name as string) || user.email.split('@')[0] || '',
+          role: 'free',
+          subscription_tier: 'free',
+        })
+        .select('role, org_id, subscription_tier, is_super_admin')
+        .single();
+
+      if (!insertError && created) {
+        profile = created;
+      } else {
+        console.error('Auth profile autogenerate failed:', insertError?.message);
+      }
+    }
 
     return {
       id: user.id,

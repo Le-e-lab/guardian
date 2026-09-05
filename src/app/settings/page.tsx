@@ -3,12 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Shield, User, Mail, Key, Save, Loader2, CheckCircle, AlertCircle, LogOut, ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/landing/Navbar';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase-browser';
 
 export default function SettingsPage() {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
@@ -26,17 +21,7 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({ id: session.user.id, email: session.user.email || '' });
-        loadProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-  }, []);
-
-  const loadProfile = async (userId: string) => {
+  async function loadProfile(userId: string) {
     const { data } = await supabase
       .from('profiles')
       .select('*')
@@ -49,6 +34,16 @@ export default function SettingsPage() {
       setSubscriptionTier(data.subscription_tier || 'free');
     }
   };
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({ id: session.user.id, email: session.user.email || '' });
+        loadProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+  }, []);
 
   const handleSaveProfile = async () => {
     if (!user) return;

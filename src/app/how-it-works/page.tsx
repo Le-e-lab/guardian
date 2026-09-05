@@ -10,7 +10,7 @@ const STEPS = [
   {
     num: '01',
     title: 'Enter a domain',
-    desc: 'Type any Zimbabwean or African domain into the scanner. econet.co.zw, cbz.co.zw, stewardbank.co.zw — we handle them all.',
+    desc: 'Type any domain you own or have permission to test — for example, yourcompany.co.zw. Sign in and we handle the rest.',
     detail: 'No installation. No agent. No configuration. Supports domains, subdomains, IPs, and full URLs. Passive-only by default — completely safe.',
   },
   {

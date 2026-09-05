@@ -2,12 +2,7 @@
 
 import { useState } from 'react';
 import { Shield, X, Mail, Lock, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase-browser';
 
 interface SignInModalProps {
   onClose: () => void;

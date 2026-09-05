@@ -7,13 +7,8 @@ import {
   ChevronDown, Clock, Eye, Target, ArrowRight, Sparkles, ShieldCheck,
   ArrowLeft, User, LogOut, ChevronDown as ChevronDownIcon, Settings
 } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
 import GuardianMark from '@/components/brand/GuardianMark';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase-browser';
 
 interface Finding {
   title: string;
@@ -156,7 +151,7 @@ const SEVERITY: Record<string, { bg: string; text: string; border: string; icon:
   info: { bg: 'bg-gray-500/10', text: 'text-gray-400', border: 'border-gray-500/20', icon: CheckCircle },
 };
 
-const DEMOS = ['elevatevaluepartners.co.zw', 'tarisai.co.zw', 'example.com', 'httpbin.org', 'github.com'];
+const DEMOS = ['elevatevaluepartners.co.zw', 'tarisai.co.zw', 'example.com', 'httpbin.org'];
 
 export default function ScannerPage() {
   const [target, setTarget] = useState('');
@@ -192,7 +187,7 @@ export default function ScannerPage() {
 
   useEffect(() => { if (user) loadHistory(); }, [user]);
 
-  const loadHistory = async () => {
+  async function loadHistory() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) return;

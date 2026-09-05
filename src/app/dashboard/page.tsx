@@ -4,12 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ScannerPage from '@/components/scanner/ScannerPage';
 import SignInModal from '@/components/auth/SignInModal';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase-browser';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);

@@ -31,18 +31,6 @@ export const DEMO_TARGETS: DemoTarget[] = [
     difficulty: 'easy',
   },
   {
-    domain: 'github.com',
-    description: 'Public code hosting — tests SSL, headers, tech stack',
-    expectedFindings: ['GitHub infrastructure', 'Security headers present', 'Technology stack detection'],
-    difficulty: 'medium',
-  },
-  {
-    domain: 'vercel.com',
-    description: 'Hosting platform — modern web stack detection',
-    expectedFindings: ['Next.js detection', 'Edge network', 'Security headers'],
-    difficulty: 'medium',
-  },
-  {
     domain: 'elevatevaluepartners.co.zw',
     description: 'Elevate Value Partners — Harare web studio (live demo target)',
     expectedFindings: ['Security headers analysis', 'Technology detection', 'SSL/TLS check', 'DNS security'],

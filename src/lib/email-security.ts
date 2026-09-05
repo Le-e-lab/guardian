@@ -1117,7 +1117,7 @@ async function checkBIMI(
 async function checkMTASTS(domain: string): Promise<MTASTSResult> {
   let configured = false;
   let policy: string | null = null;
-  let mxHosts: string[] = [];
+  const mxHosts: string[] = [];
   let maxAge: number | null = null;
 
   try {

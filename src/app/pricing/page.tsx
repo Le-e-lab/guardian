@@ -50,8 +50,8 @@ const TIERS = [
 ];
 
 const COMPARISONS = [
-  { company: 'Pentera', origin: 'Israel', price: '$35K+/yr', what: 'Enterprise pentesting platform', gap: 'No Africa presence, no local fraud patterns' },
-  { company: 'XBOW', origin: 'USA', price: '$6K+/test', what: 'Autonomous offensive security', gap: 'Per-test model, no continuous monitoring' },
+  { company: 'Pentera', origin: 'Israel', price: 'from $35K/yr', what: 'Enterprise pentesting platform', gap: 'No Africa presence, no local fraud patterns' },
+  { company: 'XBOW', origin: 'USA', price: 'from $6K per test', what: 'Autonomous offensive security', gap: 'Per-test model, no continuous monitoring' },
   { company: 'Cybervergent', origin: 'Nigeria', price: 'Custom', what: 'AI compliance & posture', gap: 'Governance layer, doesn\'t test exploitability' },
   { company: 'Sendmarc', origin: 'S. Africa', price: 'SaaS', what: 'DMARC/email security', gap: 'Detection only, no offensive validation' },
 ];
@@ -82,8 +82,8 @@ export default function PricingPage() {
           <p className="text-center text-xs text-brand-400 uppercase tracking-widest mb-4 font-medium">How we compare</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {[
-              { label: 'Pentera', price: '$35K+/yr', active: false },
-              { label: 'XBOW', price: '$6K+/test', active: false },
+              { label: 'Pentera', price: 'from $35K/yr', active: false },
+              { label: 'XBOW', price: 'from $6K/test', active: false },
               { label: 'Cybervergent', price: 'Custom', active: false },
               { label: 'Guardian', price: 'Beta (Free)', active: true },
             ].map(({ label, price, active }) => (

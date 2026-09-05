@@ -7,12 +7,7 @@ import Footer from '@/components/landing/Footer';
 import SignInModal from '@/components/auth/SignInModal';
 import FeedbackWidget from '@/components/FeedbackWidget';
 import { useAuth } from '@/lib/auth';
-import { createClient } from '@supabase/supabase-js';
-
-const createClientSupabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase-browser';
 
 type ScanStatus = 'idle' | 'scanning' | 'done' | 'error' | 'requires_auth';
 
@@ -234,7 +229,7 @@ export default function ScanPage() {
     setError('');
     setResult(null);
     try {
-      const { data: { session } } = await createClientSupabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
@@ -283,7 +278,7 @@ export default function ScanPage() {
                 <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
                 <input
                   type="text"
-                  placeholder="e.g. econet.co.zw"
+                  placeholder="e.g. yourcompany.co.zw"
                   value={domain}
                   onChange={(e) => setDomain(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleScan()}

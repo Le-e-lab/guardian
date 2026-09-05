@@ -82,7 +82,7 @@ export const GUARDRAIL_CONFIGS: Record<UserRole, GuardrailConfig> = {
   starter: {
     role: 'starter',
     scanMode: 'passive',
-    allowedModules: ['dns', 'ports', 'tech', 'ssl', 'headers', 'subdomains', 'credentials', 'social'],
+    allowedModules: ['dns', 'ports', 'tech', 'ssl', 'headers', 'subdomains'],
     blockedModules: ['active'],
     maxScanTargets: 15,
     maxScansPerDay: 15,

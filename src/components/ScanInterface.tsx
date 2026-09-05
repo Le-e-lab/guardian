@@ -3,12 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Shield, Zap, Lock, AlertTriangle, CheckCircle, XCircle, ChevronDown, Clock, Eye, Target, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
 import AuthButton from './AuthButton';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase-browser';
 
 interface Finding {
   title: string;
@@ -36,7 +31,7 @@ const SEVERITY: Record<string, { bg: string; text: string; border: string; icon:
   info: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/20', icon: CheckCircle },
 };
 
-const DEMOS = ['example.com', 'httpbin.org', 'github.com', 'vercel.com', 'tryhackme.com'];
+const DEMOS = ['example.com', 'httpbin.org', 'elevatevaluepartners.co.zw', 'tarisai.co.zw'];
 
 export default function ScanInterface() {
   const [target, setTarget] = useState('');
@@ -67,7 +62,7 @@ export default function ScanInterface() {
 
   useEffect(() => { if (user) loadHistory(); }, [user]);
 
-  const loadHistory = async () => {
+  async function loadHistory() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) return;

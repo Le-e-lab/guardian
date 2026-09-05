@@ -6,6 +6,7 @@ import {
   Clock, AlertTriangle, ToggleLeft, ToggleRight, Eye, Trash2
 } from 'lucide-react';
 import Navbar from '@/components/landing/Navbar';
+import { supabase } from '@/lib/supabase-browser';
 
 interface AccessRequest {
   id: string;
@@ -46,15 +47,10 @@ export default function AdminDashboard() {
     checkAuthAndFetch();
   }, []);
 
-  const checkAuthAndFetch = async () => {
+  async function checkAuthAndFetch() {
     try {
       setLoading(true);
       // Check if user is authenticated and is super admin
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {

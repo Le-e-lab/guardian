@@ -4,13 +4,8 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, X, Zap, Globe, CreditCard, Home } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
 import GuardianMark from '@/components/brand/GuardianMark';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase-browser';
 
 const NAV_LINKS = [
   { href: '/how-it-works', label: 'How It Works', icon: Zap, desc: 'The 60-second process' },

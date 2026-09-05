@@ -183,7 +183,7 @@ export async function runComplianceCheck(domain: string): Promise<{
   const context = await detectSiteContext(domain);
 
   // 2. Fetch site headers and SSL info
-  let headers: Record<string, string> = {};
+  const headers: Record<string, string> = {};
   let body = '';
   let sslInfo: Record<string, unknown> = {};
 
